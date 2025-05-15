@@ -10,10 +10,23 @@ function RegisterForm({ onRegister, onSwitchToLogin, onBack }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    // Email validation: lowercase and contains @
+    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      setError("Email must be lowercase and contain a valid @ address.");
+      return;
+    }
+    // Password validation: at least 8 characters
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
     if (!termsAccepted) {
       setError("Please accept the Terms and Conditions to continue.");
       return;
     }
+
     try {
       const res = await fetch("http://localhost:5050/api/auth/register", {
         method: "POST",
@@ -27,6 +40,8 @@ function RegisterForm({ onRegister, onSwitchToLogin, onBack }) {
       const data = await res.json();
       console.log('Register response:', data);
       localStorage.setItem("token", data.token);
+      localStorage.setItem("is_admin", data.is_admin); // Add this line
+      localStorage.setItem("name", data.name); // Store the name
       setTimeout(() => onRegister(), 1000);
     } catch (err) {
       setError(err.message);

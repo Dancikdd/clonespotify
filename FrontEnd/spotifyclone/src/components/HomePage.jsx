@@ -6,9 +6,23 @@ import Footer from "./Footer";
 import RightSidebar from "./RightSidebar";
 import PlayerBar from "./PlayerBar";
 
-const HomePage = ({ onShowLogin, onShowRegister, isAuthenticated, onLogout }) => (
+const HomePage = ({ 
+  onShowLogin, 
+  onShowRegister, 
+  isAuthenticated, 
+  isAdmin, 
+  userName, 
+  onLogout 
+}) => (
   <div className="flex flex-col min-h-screen bg-black">
-    <Navbar onShowLogin={onShowLogin} onShowRegister={onShowRegister} isAuthenticated={isAuthenticated} onLogout={onLogout} />
+    <Navbar 
+      onShowLogin={onShowLogin} 
+      onShowRegister={onShowRegister} 
+      isAuthenticated={isAuthenticated} 
+      isAdmin={isAdmin}
+      userName={userName}
+      onLogout={onLogout} 
+    />
     <div className="flex flex-1">
       <Sidebar />
       <MainContent />
@@ -19,4 +33,4 @@ const HomePage = ({ onShowLogin, onShowRegister, isAuthenticated, onLogout }) =>
   </div>
 );
 
-export default HomePage; 
+export default HomePage;

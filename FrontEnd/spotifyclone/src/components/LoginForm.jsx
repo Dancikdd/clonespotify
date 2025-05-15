@@ -42,6 +42,8 @@ function LoginForm({ onLogin, onSwitchToRegister, onBack }) {
         return;
       }
       localStorage.setItem("token", data.token);
+      localStorage.setItem("is_admin", data.is_admin);
+      localStorage.setItem("name", data.name); // Make sure this line is present!
       setSuccess(true);
       setTimeout(() => {
         setLoading(false);

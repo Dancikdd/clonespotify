@@ -1,6 +1,6 @@
 import React from "react";
 
-const Navbar = ({ onShowLogin, onShowRegister, isAuthenticated, onLogout }) => (
+const Navbar = ({ onShowLogin, onShowRegister, isAuthenticated, isAdmin, userName, onLogout }) => (
   <header className="w-full bg-[#181818] flex items-center justify-between px-8 py-4 border-b border-gray-800 sticky top-0 z-10">
     <div className="flex items-center gap-4">
       <button className="text-white hover:text-[#1DB954]">
@@ -23,13 +23,20 @@ const Navbar = ({ onShowLogin, onShowRegister, isAuthenticated, onLogout }) => (
           <button className="bg-white text-black font-bold px-6 py-2 rounded-full ml-2 hover:scale-105 transition-transform" onClick={onShowLogin}>Log in</button>
         </>
       ) : (
-        <div className="flex items-center gap-2">
-          <span className="text-white font-semibold">User</span>
-          <button className="bg-[#1DB954] text-black font-bold px-4 py-2 rounded-full ml-2 hover:bg-[#1ED760] transition-colors" onClick={onLogout}>Logout</button>
+        <div className="flex items-center gap-4">
+          <span className="text-white font-semibold">Welcome, {userName}!</span>
+          {isAdmin && (
+            <button className="bg-purple-600 text-white font-bold px-4 py-2 rounded-full hover:bg-purple-700 transition-colors">
+              Admin Dashboard
+            </button>
+          )}
+          <button className="bg-[#1DB954] text-black font-bold px-4 py-2 rounded-full hover:bg-[#1ED760] transition-colors" onClick={onLogout}>
+            Logout
+          </button>
         </div>
       )}
     </nav>
   </header>
 );
 
-export default Navbar; 
+export default Navbar;
