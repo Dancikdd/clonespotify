@@ -3,6 +3,14 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// Global error handlers for debugging
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const songRoutes = require('./routes/songRoutes');
@@ -10,7 +18,7 @@ const playlistRoutes = require('./routes/playlistRoutes');
 const userRoutes = require('./routes/userRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5050;
 
 // Middleware
 app.use(cors({
