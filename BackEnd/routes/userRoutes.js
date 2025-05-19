@@ -12,6 +12,12 @@ router.get('/profile', userController.getUserProfile);
 // Update user profile
 router.put('/profile', userController.updateUserProfile);
 
+// --- Liked Songs Routes ---
+router.post('/profile/liked-songs', userController.addLikedSong);
+router.delete('/profile/liked-songs/:songId', userController.removeLikedSong);
+router.get('/profile/liked-songs', userController.getLikedSongs);
+// --------------------------
+
 // Get all users (Admin only)
 router.get('/', adminMiddleware, userController.getAllUsers);
 
