@@ -5,10 +5,9 @@ import MainContent from "./MainContent";
 import Footer from "./Footer";
 import RightSidebar from "./RightSidebar";
 import PlayerBar from "./PlayerBar";
+import { useNavigate } from 'react-router-dom';
 
 const HomePage = ({ 
-  onShowLogin, 
-  onShowRegister, 
   isAuthenticated, 
   isAdmin, 
   userName, 
@@ -18,6 +17,7 @@ const HomePage = ({
   const playerBarRef = useRef(null);
   const [currentPage, setCurrentPage] = useState('home');
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const navigate = useNavigate();
 
   const toggleLikeStatus = (song) => {
     setLikedSongs(prevLikedSongs => {
@@ -41,8 +41,6 @@ const HomePage = ({
   return (
     <div className="flex flex-col min-h-screen bg-black">
       <Navbar 
-        onShowLogin={onShowLogin} 
-        onShowRegister={onShowRegister} 
         isAuthenticated={isAuthenticated} 
         isAdmin={isAdmin}
         userName={userName}
@@ -72,7 +70,7 @@ const HomePage = ({
             <p className="text-sm mb-6">Log in to create and share playlists.</p>
             <div className="flex justify-center items-center space-x-4">
               <button className="text-white text-sm font-bold py-2 px-4 hover:underline" onClick={() => setShowAuthModal(false)}>Not now</button>
-              <button className="bg-white text-blue-500 text-sm font-bold py-2 px-6 rounded-full hover:scale-105 transition-transform" onClick={() => { onShowLogin(); setShowAuthModal(false); }}>Log in</button>
+              <button className="bg-white text-blue-500 text-sm font-bold py-2 px-6 rounded-full hover:scale-105 transition-transform" onClick={() => { navigate('/login'); setShowAuthModal(false); }}>Log in</button>
             </div>
           </div>
         </div>

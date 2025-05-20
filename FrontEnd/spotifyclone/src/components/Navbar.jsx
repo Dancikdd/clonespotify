@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from 'react-router-dom';
 
-const Navbar = ({ onShowLogin, onShowRegister, isAuthenticated, isAdmin, userName, onLogout }) => {
+const Navbar = ({ isAuthenticated, isAdmin, userName, onLogout }) => {
+  const navigate = useNavigate();
   return (
     <nav className="bg-[#181818] px-6 py-3 flex items-center justify-between">
       {/* Left side - Navigation arrows */}
@@ -38,8 +40,11 @@ const Navbar = ({ onShowLogin, onShowRegister, isAuthenticated, isAdmin, userNam
               <img src="/assets/frontend-assets/arrow.png" alt="Menu" className="w-4 h-4" />
             </div>
             {isAdmin && (
-              <button className="text-gray-400 hover:text-white">
-                <img src="/assets/frontend-assets/zoom.png" alt="Admin" className="w-6 h-6" />
+              <button
+                onClick={() => navigate('/admin')}
+                className="text-gray-400 hover:text-white font-bold"
+              >
+                Admin Dashboard
               </button>
             )}
             <button onClick={onLogout} className="text-gray-400 hover:text-white">
@@ -49,13 +54,13 @@ const Navbar = ({ onShowLogin, onShowRegister, isAuthenticated, isAdmin, userNam
         ) : (
           <>
             <button
-              onClick={onShowLogin}
+              onClick={() => navigate('/login')}
               className="text-gray-400 hover:text-white font-bold"
             >
               Log in
             </button>
             <button
-              onClick={onShowRegister}
+              onClick={() => navigate('/register')}
               className="bg-white text-black font-bold px-6 py-2 rounded-full hover:scale-105 transition-transform"
             >
               Sign up

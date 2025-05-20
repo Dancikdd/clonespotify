@@ -1,12 +1,14 @@
 import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 
-function LoginForm({ onLogin, onSwitchToRegister, onBack }) {
+function LoginForm({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,7 +63,7 @@ function LoginForm({ onLogin, onSwitchToRegister, onBack }) {
       <div className="w-full max-w-md flex flex-col items-center">
         {/* Logo and Back Button */}
         <div className="w-full flex flex-col items-center mb-6 relative">
-          <button onClick={onBack} className="absolute left-0 top-1 text-white hover:text-[#1DB954] px-2 py-1 rounded focus:outline-none">
+          <button onClick={() => navigate(-1)} className="absolute left-0 top-1 text-white hover:text-[#1DB954] px-2 py-1 rounded focus:outline-none">
             <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
           <svg role="img" height="60" width="185" aria-hidden="true" viewBox="0 0 167 48" className="fill-current text-white mx-auto">
@@ -128,8 +130,8 @@ function LoginForm({ onLogin, onSwitchToRegister, onBack }) {
           <hr className="border-gray-700 my-6 w-full" />
           <p className="text-center text-gray-400 text-sm w-full">
             Don't have an account?
-            <button 
-              onClick={onSwitchToRegister} 
+            <button
+              onClick={() => navigate('/register')}
               className="font-semibold text-white hover:text-[#1DB954] focus:outline-none underline ml-1"
               disabled={loading}
             >

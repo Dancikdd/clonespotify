@@ -1,53 +1,70 @@
 import React, { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from "./components/HomePage";
 import AuthPage from "./components/AuthPage";
+import AdminDashboard from "./admin/AdminDashboard";
 
 function App() {
-  const [authMode, setAuthMode] = useState(null); // null, 'login', or 'register'
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
   const [isAdmin, setIsAdmin] = useState(localStorage.getItem("is_admin") === "true");
   const [userName, setUserName] = useState(localStorage.getItem("name") || "");
 
-  const handleShowLogin = () => setAuthMode("login");
-  const handleShowRegister = () => setAuthMode("register");
   const handleAuthSuccess = () => {
     setIsAuthenticated(!!localStorage.getItem("token"));
-    setIsAdmin(localStorage.getItem("is_admin") === "true"); // update admin state
+    setIsAdmin(localStorage.getItem("is_admin") === "true");
     setUserName(localStorage.getItem("name") || "");
-    setAuthMode(null);
   };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("is_admin"); // clear admin flag
+    localStorage.removeItem("is_admin");
     localStorage.removeItem("name");
     setIsAuthenticated(false);
     setIsAdmin(false);
     setUserName("");
-    setAuthMode(null);
   };
-  const handleBack = () => setAuthMode(null);
-
-  if (authMode) {
-    return (
-      <AuthPage
-        mode={authMode}
-        onAuthSuccess={handleAuthSuccess}
-        onShowLogin={handleShowLogin}
-        onShowRegister={handleShowRegister}
-        onBack={handleBack}
-      />
-    );
-  }
 
   return (
-    <HomePage
-      onShowLogin={handleShowLogin}
-      onShowRegister={handleShowRegister}
-      isAuthenticated={isAuthenticated}
-      isAdmin={isAdmin}
-      userName={userName}
-      onLogout={handleLogout}
-    />
+    <Router>
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" />
+            ) : (
+              <AuthPage mode="login" onAuthSuccess={handleAuthSuccess} />
+            )
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" />
+            ) : (
+              <AuthPage mode="register" onAuthSuccess={handleAuthSuccess} />
+            )
+          }
+        />
+         <Route
+          path="/admin"
+          element={
+            isAdmin ? (
+              <AdminDashboard />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+        <Route
+          path="/"
+          element={<HomePage isAuthenticated={isAuthenticated} isAdmin={isAdmin} userName={userName} onLogout={handleLogout} />}
+        />
+        {/* Redirect any other unknown routes to the home page */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
   );
 }
 

@@ -45,86 +45,91 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
             { id: 6, image: "/assets/frontend-assets/img8.jpg", title: "Playlist 6", artist: "Artist 6" },
           ];
 
-  return (
+          return (
             <>
-      {/* Tab Bar */}
-      <div className="rounded-2xl bg-gradient-to-r from-purple-800 via-purple-600 to-blue-700 p-6 mb-8 flex flex-col gap-4 shadow-lg">
-        <div className="flex gap-4 mb-4">
-          {tabs.map((tab, idx) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(idx)}
-              className={`px-5 py-2 rounded-full font-bold text-sm transition-colors ${activeTab === idx ? 'bg-white text-black shadow' : 'bg-white bg-opacity-10 text-white hover:bg-opacity-20'}`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {demoCards.map((card, i) => (
+              {/* Tab Bar */}
+              <div className="rounded-2xl bg-gradient-to-r from-purple-800 via-purple-600 to-blue-700 p-6 mb-8 flex flex-col gap-4 shadow-lg">
+                <div className="flex gap-4 mb-4">
+                  {tabs.map((tab, idx) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(idx)}
+                      className={`px-5 py-2 rounded-full font-bold text-sm transition-colors ${activeTab === idx ? 'bg-white text-black shadow' : 'bg-white bg-opacity-10 text-white hover:bg-opacity-20'}`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                {/* Revert to previous card style for initial demoCards */}
+                <div className="flex gap-4 overflow-x-auto pb-2">
+                  {demoCards.map((card, i) => (
                     <div key={i} className="min-w-[180px] h-24 rounded-xl overflow-hidden relative group cursor-pointer hover:scale-105 transition-transform">
                       <img src={card.image} alt={card.title} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-br from-black/50 to-transparent flex items-center justify-center">
                         <span className="text-white font-bold text-lg">{card.title}</span>
                       </div>
-            </div>
-          ))}
-        </div>
-      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-      {/* Made For You / Daily Mixes */}
-      <section className="mb-10">
-        <div className="flex justify-between items-center mb-4">
+              {/* Made For You / Daily Mixes */}
+              <section className="mb-10">
+                <div className="flex justify-between items-center mb-4">
                   <h2 className="text-2xl font-extrabold text-white tracking-tight">Made For You</h2>
-          <button className="text-sm text-gray-400 hover:underline">Show all</button>
-        </div>
-        <div className="flex gap-6 overflow-x-auto pb-2">
+                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
+                </div>
+                {/* Apply consistent card style to Daily Mixes */}
+                <div className="flex gap-6 overflow-x-auto pb-2">
                   {dailyMixes.map((mix) => (
-                    <div key={mix.id} className="w-48 flex-shrink-0 bg-[#232323] rounded-2xl p-4 shadow-lg hover:shadow-2xl transition-shadow flex flex-col items-center cursor-pointer group">
-                      <div className="relative w-48 h-48 mb-3">
-                        <img src={mix.image} alt={mix.title} className="w-full h-full object-cover rounded-xl shadow-inner" />
-                        <div className="absolute bottom-2 right-2 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div key={mix.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
+                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
+                        <img src={mix.image} alt={mix.title} className="w-full h-full object-cover" />
+                        <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
                           <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
                         </div>
                       </div>
                       <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{mix.title}</div>
-                      <div className="text-gray-400 text-xs truncate w-full text-center">{mix.artists}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+                      <div className="text-gray-400 text-sm truncate w-full text-center">{mix.artists}</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
 
-      {/* Recommended Stations */}
-      <section className="mb-10">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-extrabold text-white tracking-tight">Recommended Stations</h2>
-          <button className="text-sm text-gray-400 hover:underline">Show all</button>
-        </div>
-        <div className="flex gap-6 overflow-x-auto pb-2">
+              {/* Recommended Stations */}
+              <section className="mb-10">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-extrabold text-white tracking-tight">Recommended Stations</h2>
+                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
+                </div>
+                {/* Apply consistent card style to Recommended Stations */}
+                <div className="flex gap-6 overflow-x-auto pb-2">
                   {recommendedStations.map((station, i) => (
-                    <div key={i} className="w-44 h-44 flex-shrink-0 rounded-2xl overflow-hidden relative group cursor-pointer hover:scale-105 transition-transform">
-                      <img src={station.image} alt={station.name} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-br from-black/50 to-transparent flex flex-col items-center justify-center">
-                        <span className="text-white font-bold text-xl">{station.name}</span>
-                        <span className="text-gray-200 text-xs mt-2">Radio</span>
+                     <div key={i} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
+                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
+                        <img src={station.image} alt={station.name} className="w-full h-full object-cover" />
+                         {/* No play button on these radio cards based on image */}
                       </div>
-            </div>
-          ))}
-        </div>
-      </section>
+                      <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{station.name}</div>
+                      <div className="text-gray-400 text-sm truncate w-full text-center">Radio</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
 
-      {/* Recently Played */}
-      <section className="mb-10">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-extrabold text-white tracking-tight">Recently played</h2>
-          <button className="text-sm text-gray-400 hover:underline">Show all</button>
-        </div>
-        <div className="flex gap-6 overflow-x-auto pb-2">
+              {/* Recently Played */}
+              <section className="mb-10">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-extrabold text-white tracking-tight">Recently played</h2>
+                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
+                </div>
+                {/* Apply consistent card style to Recently Played */}
+                <div className="flex gap-6 overflow-x-auto pb-2">
                   {recentlyPlayed.map((item) => (
-                    <div key={item.id} className="w-44 flex-shrink-0 bg-[#232323] rounded-2xl p-4 shadow-lg hover:shadow-2xl transition-shadow flex flex-col items-center cursor-pointer group">
-                      <div className="relative w-44 h-44 mb-3">
-                        <img src={item.image} alt={item.title} className="w-full h-full object-cover rounded-xl shadow-inner" />
-                        <div className="absolute bottom-2 right-2 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div key={item.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
+                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
+                        <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                         <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
                           <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
                         </div>
                       </div>
@@ -210,11 +215,12 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
                   <h2 className="text-2xl font-extrabold text-white tracking-tight">Trending songs</h2>
                   <button className="text-sm text-gray-400 hover:underline">Show all</button>
                 </div>
+                {/* Apply consistent card style to Trending songs */}
                 <div className="flex gap-6 overflow-x-auto pb-2">
                   {trendingSongs.map((song) => (
-                    <div key={song.id} className="w-48 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group">
-                      <div className="relative w-48 h-48 mb-3">
-                        <img src={song.image} alt={song.title} className="w-full h-full object-cover rounded-xl shadow-inner" />
+                    <div key={song.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
+                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
+                        <img src={song.image} alt={song.title} className="w-full h-full object-cover" />
                         <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
                           <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
                         </div>
@@ -232,14 +238,13 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
                   <h2 className="text-2xl font-extrabold text-white tracking-tight">Popular artists</h2>
                   <button className="text-sm text-gray-400 hover:underline">Show all</button>
                 </div>
+                {/* Apply consistent card style to Popular artists with rounded images */}
                 <div className="flex gap-6 overflow-x-auto pb-2">
                   {popularArtists.map((artist) => (
-                    <div key={artist.id} className="w-48 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
+                    <div key={artist.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
                       <div className="relative w-48 h-48 mb-3 rounded-full overflow-hidden">
-                        <img src={artist.image} alt={artist.name} className="w-full h-full object-cover" />
-                        <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
-                          <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
-                        </div>
+                        <img src={artist.image} alt={artist.name} className="w-full h-full object-cover rounded-full" />
+                        {/* No play button on artist cards based on image */}
                       </div>
                       <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{artist.name}</div>
                       <div className="text-gray-400 text-sm truncate w-full text-center">Artist</div>
@@ -254,17 +259,18 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
                   <h2 className="text-2xl font-extrabold text-white tracking-tight">Popular albums and singles</h2>
                   <button className="text-sm text-gray-400 hover:underline">Show all</button>
                 </div>
+                {/* Apply consistent card style to Popular albums and singles */}
                 <div className="flex gap-6 overflow-x-auto pb-2">
                   {popularAlbums.map((album) => (
-                    <div key={album.id} className="w-48 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
-                      <div className="relative w-48 h-48 mb-3">
-                        <img src={album.image} alt={album.title} className="w-full h-full object-cover rounded-xl shadow-inner" />
+                    <div key={album.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
+                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
+                        <img src={album.image} alt={album.title} className="w-full h-full object-cover" />
                         <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
                           <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
                         </div>
                       </div>
                       <div className="text-white font-semibold truncate w-full text-center">{album.title}</div>
-                      <div className="text-gray-400 text-sm truncate w-full text-center">{album.artist}</div>
+                      <div className="text-gray-400 text-xs truncate w-full text-center">{album.artist}</div>
                     </div>
                   ))}
                 </div>
@@ -276,14 +282,13 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
                   <h2 className="text-2xl font-extrabold text-white tracking-tight">Popular radio</h2>
                   <button className="text-sm text-gray-400 hover:underline">Show all</button>
                 </div>
+                {/* Apply consistent card style to Popular radio */}
                 <div className="flex gap-6 overflow-x-auto pb-2">
                   {popularRadioStations.map((station) => (
-                    <div key={station.id} className="w-48 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
-                      <div className="relative w-48 h-48 mb-3 rounded-full overflow-hidden">
+                    <div key={station.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
+                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
                         <img src={station.image} alt={station.name} className="w-full h-full object-cover" />
-                        <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
-                          <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
-                        </div>
+                        {/* No play button on these radio cards based on image */}
                       </div>
                       <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{station.name}</div>
                       <div className="text-gray-400 text-sm truncate w-full text-center">Radio</div>
@@ -298,9 +303,10 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
                   <h2 className="text-2xl font-extrabold text-white tracking-tight">Featured Charts</h2>
                   <button className="text-sm text-gray-400 hover:underline">Show all</button>
                 </div>
+                {/* Keep Featured Charts as is based on the provided image */}
                 <div className="flex gap-6 overflow-x-auto pb-2">
                   {featuredCharts.map((chart) => (
-                    <div key={chart.id} className={`w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden relative cursor-pointer hover:scale-105 transition-transform bg-gradient-to-br ${chart.color} p-4 flex flex-col justify-between`}>
+                    <div key={chart.id} className={`w-56 h-48 flex-shrink-0 rounded-lg overflow-hidden relative cursor-pointer hover:scale-105 transition-transform bg-gradient-to-br ${chart.color} p-4 flex flex-col justify-between`}>
                        <div>
                          <div className="text-white font-bold text-xl">{chart.title}</div>
                          <div className="text-white text-sm mt-1">{chart.subtitle}</div>
@@ -317,21 +323,22 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
                   <h2 className="text-2xl font-extrabold text-white tracking-tight">Playlists from our editors</h2>
                   <button className="text-sm text-gray-400 hover:underline">Show all</button>
                 </div>
+                {/* Apply consistent card style to Playlists from our editors */}
                 <div className="flex gap-6 overflow-x-auto pb-2">
                   {playlistsFromEditors.map((playlist) => (
-                     <div key={playlist.id} className="w-48 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-start">
-                       <div className="relative w-40 h-40 mb-3">
-                         <img src={playlist.image} alt={playlist.title} className="w-full h-full object-cover rounded-lg shadow-inner" />
+                     <div key={playlist.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
+                       <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
+                         <img src={playlist.image} alt={playlist.title} className="w-full h-full object-cover" />
                          <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
                           <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
                         </div>
                       </div>
-                      <div className="text-white font-bold text-lg mb-1 truncate w-full">{playlist.title}</div>
-                      <div className="text-gray-400 text-sm truncate w-full">{playlist.description}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+                      <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{playlist.title}</div>
+                      <div className="text-gray-400 text-sm truncate w-full text-center">{playlist.description}</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
 
             </div>
           );
@@ -395,4 +402,4 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
   );
 };
 
-export default MainContent; 
+export default MainContent;
