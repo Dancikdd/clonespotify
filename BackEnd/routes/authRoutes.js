@@ -81,4 +81,16 @@ router.post('/login', async (req, res) => {
 // Get current user (Protected route)
 router.get('/me', authMiddleware, authController.getCurrentUser);
 
+// Logout route (Protected)
+router.post('/logout', authMiddleware, async (req, res) => {
+  try {
+    // In a real application, you might want to blacklist the token
+    // For now, we'll just send a success response
+    res.status(200).json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;
