@@ -1,23 +1,46 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const tabs = ["All", "Music", "Podcasts", "Albums"];
 
-const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => {
+const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated, openPlaylist }) => {
   const [activeTab, setActiveTab] = useState(0);
+  const [playlists, setPlaylists] = useState([]);
+  const [madeForYou, setMadeForYou] = useState([]);
+  const [madeForYouArtist, setMadeForYouArtist] = useState("");
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchPlaylists = async () => {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:5050/api/playlists", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setPlaylists(data.playlists || []);
+      };
+      fetchPlaylists();
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchMadeForYou = async () => {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:5050/api/playlists/made-for-you", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setMadeForYou(data.songs || []);
+        setMadeForYouArtist(data.artist || "");
+      };
+      fetchMadeForYou();
+    }
+  }, [isAuthenticated]);
 
   const renderContent = () => {
     switch (currentPage) {
       case 'home':
         if (isAuthenticated) {
-          const demoCards = [
-            { title: "Liked Songs", type: "playlist", color: "from-purple-700 to-purple-400", image: "/assets/frontend-assets/img1.jpg" },
-            { title: "My Shazam Tracks", type: "playlist", color: "from-blue-700 to-blue-400", image: "/assets/frontend-assets/img2.jpg" },
-            { title: "My playlist #6", type: "playlist", color: "from-pink-700 to-pink-400", image: "/assets/frontend-assets/img3.jpg" },
-            { title: "Skillet Radio", type: "radio", color: "from-orange-700 to-orange-400", image: "/assets/frontend-assets/img4.jpg" },
-            { title: "Top Songs - Global", type: "playlist", color: "from-green-700 to-green-400", image: "/assets/frontend-assets/img5.jpg" },
-            { title: "Daily Mix 5", type: "playlist", color: "from-yellow-700 to-yellow-400", image: "/assets/frontend-assets/img6.jpg" },
-          ];
-
           const dailyMixes = [
             { id: 1, image: "/assets/frontend-assets/img7.jpg", title: "Daily Mix 1", artists: "Artist 1, Artist 2" },
             { id: 2, image: "/assets/frontend-assets/img8.jpg", title: "Daily Mix 2", artists: "Artist 3, Artist 4" },
@@ -62,37 +85,78 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
                 </div>
                 {/* Revert to previous card style for initial demoCards */}
                 <div className="flex gap-4 overflow-x-auto pb-2">
-                  {demoCards.map((card, i) => (
-                    <div key={i} className="min-w-[180px] h-24 rounded-xl overflow-hidden relative group cursor-pointer hover:scale-105 transition-transform">
-                      <img src={card.image} alt={card.title} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-br from-black/50 to-transparent flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">{card.title}</span>
+                  {playlists.length === 0 ? (
+                    <div className="text-gray-400">No playlists found.</div>
+                  ) : (
+                    playlists.map((playlist) => (
+                      <div
+                        key={playlist.id || playlist._id}
+                        className="min-w-[180px] h-24 rounded-xl overflow-hidden relative group cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => openPlaylist(playlist)} // <-- add this
+                      >
+                        <img src={playlist.img_url || "/assets/frontend-assets/default_song_thumbnail.png"} alt={playlist.name} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-black/50 to-transparent flex items-center justify-center">
+                          <span className="text-white font-bold text-lg">{playlist.name}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 
-              {/* Made For You / Daily Mixes */}
+              {/* Made For You / Random Playlist by Artist */}
               <section className="mb-10">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-extrabold text-white tracking-tight">Made For You</h2>
-                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
+                  <h2 className="text-2xl font-extrabold text-white tracking-tight">
+                    Made For You {madeForYouArtist && <span className="text-green-400">({madeForYouArtist})</span>}
+                  </h2>
+                  <button
+                    className="text-sm text-gray-400 hover:underline"
+                    onClick={() => {
+                      setMadeForYou([]);
+                      setMadeForYouArtist("");
+                      (async () => {
+                        const token = localStorage.getItem("token");
+                        const res = await fetch("http://localhost:5050/api/playlists/made-for-you", {
+                          headers: { Authorization: `Bearer ${token}` }
+                        });
+                        const data = await res.json();
+                        setMadeForYou(data.songs || []);
+                        setMadeForYouArtist(data.artist || "");
+                      })();
+                    }}
+                  >
+                    Refresh
+                  </button>
                 </div>
-                {/* Apply consistent card style to Daily Mixes */}
                 <div className="flex gap-6 overflow-x-auto pb-2">
-                  {dailyMixes.map((mix) => (
-                    <div key={mix.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
-                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
-                        <img src={mix.image} alt={mix.title} className="w-full h-full object-cover" />
-                        <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
-                          <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
+                  {madeForYou.length === 0 ? (
+                    <div className="text-gray-400">No songs found.</div>
+                  ) : (
+                    madeForYou.map((song) => {
+                      console.log(song.img_url, encodeURI(song.img_url));
+                      return (
+                        <div
+                          key={song.id}
+                          className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center"
+                          onClick={() => playSong(song)}
+                        >
+                          <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
+                            <img
+                              src={encodeURI(song.img_url) || song.thumbnail || song.image || "/assets/frontend-assets/default_song_thumbnail.png"}
+                              alt={song.title}
+                              className="w-full h-full object-cover border border-red-500"
+                            />
+                            <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
+                              <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
+                            </div>
+                          </div>
+                          <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{song.title}</div>
+                          <div className="text-gray-400 text-sm truncate w-full text-center">{song.artist}</div>
                         </div>
-                      </div>
-                      <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{mix.title}</div>
-                      <div className="text-gray-400 text-sm truncate w-full text-center">{mix.artists}</div>
-                    </div>
-                  ))}
+                      );
+                    })
+                  )}
                 </div>
               </section>
 
@@ -128,7 +192,11 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
                   {recentlyPlayed.map((item) => (
                     <div key={item.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
                       <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
-                        <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                        <img
+                          src={encodeURI(item.img_url) || item.thumbnail || item.image || "/assets/frontend-assets/default_song_thumbnail.png"}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
                          <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
                           <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
                         </div>
@@ -220,7 +288,11 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
                   {trendingSongs.map((song) => (
                     <div key={song.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
                       <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
-                        <img src={song.image} alt={song.title} className="w-full h-full object-cover" />
+                        <img
+                          src={encodeURI(song.img_url) || song.thumbnail || song.image || "/assets/frontend-assets/default_song_thumbnail.png"}
+                          alt={song.title}
+                          className="w-full h-full object-cover border border-red-500"
+                        />
                         <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
                           <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
                         </div>
@@ -264,7 +336,11 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
                   {popularAlbums.map((album) => (
                     <div key={album.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
                       <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
-                        <img src={album.image} alt={album.title} className="w-full h-full object-cover" />
+                        <img
+                          src={encodeURI(album.img_url) || album.thumbnail || album.image || "/assets/frontend-assets/default_song_thumbnail.png"}
+                          alt={album.title}
+                          className="w-full h-full object-cover border border-red-500"
+                        />
                         <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
                           <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
                         </div>
@@ -328,7 +404,11 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
                   {playlistsFromEditors.map((playlist) => (
                      <div key={playlist.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
                        <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
-                         <img src={playlist.image} alt={playlist.title} className="w-full h-full object-cover" />
+                         <img
+                           src={encodeURI(playlist.img_url) || playlist.thumbnail || playlist.image || "/assets/frontend-assets/default_song_thumbnail.png"}
+                           alt={playlist.title}
+                           className="w-full h-full object-cover border border-red-500"
+                         />
                          <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
                           <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
                         </div>

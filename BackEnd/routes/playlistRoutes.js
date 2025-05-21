@@ -12,6 +12,9 @@ router.post('/', playlistController.createPlaylist);
 // Get all playlists for current user
 router.get('/', playlistController.getUserPlaylists);
 
+// Get "Made for You" playlists
+router.get('/made-for-you', playlistController.getMadeForYou);
+
 // Get playlist by ID with songs
 router.get('/:id', playlistController.getPlaylistById);
 
@@ -22,7 +25,7 @@ router.put('/:id', playlistController.updatePlaylist);
 router.delete('/:id', playlistController.deletePlaylist);
 
 // Add song to playlist
-router.post('/add-song', playlistController.addSongToPlaylist);
+router.post('/:id/songs', playlistController.addSongToPlaylist);
 
 // Remove song from playlist
 router.delete('/:playlistId/songs/:songId', playlistController.removeSongFromPlaylist);

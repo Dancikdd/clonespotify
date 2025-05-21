@@ -9,6 +9,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import SearchResults from "./SearchResults";
 import SongResult from "./SongResult";
 import SongNotFound from "./SongNotFound";
+import ShowPlaylist from "./ShowPlaylist";
 
 const HomePage = ({ 
   isAuthenticated, 
@@ -26,6 +27,11 @@ const HomePage = ({
   const [selectedSong, setSelectedSong] = useState(null); // The song whose details are shown
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPlaylist, setCurrentPlaylist] = useState(null);
+  const [playlistSongs, setPlaylistSongs] = useState([]);
+  const [currentSongIndex, setCurrentSongIndex] = useState(-1);
+  const [isPlayingFromPlaylist, setIsPlayingFromPlaylist] = useState(false);
+  const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -70,6 +76,7 @@ const HomePage = ({
     setShowSearchResults(false);
     setSelectedSong(null);
     setCurrentPage('home');
+    setCurrentPlaylist(null);
   };
 
   // When you click a song in search results, show its details
@@ -81,11 +88,43 @@ const HomePage = ({
   // When you press play in SongResult, play the song
   const playSong = (songToPlay) => {
     setCurrentSong(songToPlay);
+
+    // If playing from a playlist, update index and flag
+    if (currentPlaylist && playlistSongs.length > 0) {
+      const idx = playlistSongs.findIndex(s => s.id === songToPlay.id);
+      if (idx !== -1) {
+        setCurrentSongIndex(idx);
+        setIsPlayingFromPlaylist(true);
+      } else {
+        setIsPlayingFromPlaylist(false);
+        setCurrentSongIndex(-1);
+      }
+    } else {
+      setIsPlayingFromPlaylist(false);
+      setCurrentSongIndex(-1);
+    }
+
     if (!isAuthenticated) {
       setShowAuthModal(true);
     } else if (playerBarRef.current && playerBarRef.current.setPlayingSong) {
       playerBarRef.current.setPlayingSong(songToPlay);
     }
+  };
+
+  const handleOpenPlaylist = async (playlist) => {
+    setCurrentPlaylist(playlist);
+    setSelectedSong(null);
+    setShowSearchResults(false);
+  
+    // Fetch songs for the playlist
+    const token = localStorage.getItem("token");
+    const res = await fetch(`http://localhost:5050/api/playlists/${playlist.id || playlist._id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    setPlaylistSongs(data.songs || []);
+    setIsPlayingFromPlaylist(false); // Not playing yet, just viewing
+    setCurrentSongIndex(-1);
   };
 
   const renderMainContent = () => {
@@ -112,9 +151,20 @@ const HomePage = ({
           likedSongs={likedSongs}
           playSong={playSong}
           isAuthenticated={isAuthenticated}
+          openPlaylist={handleOpenPlaylist} // <-- pass this function
         />
       );
     }
+  };
+
+  const renderSearchResults = () => {
+    return (
+      <SearchResults 
+        results={safeResults} 
+        onSongClick={handleSongClick}
+        searchTerm={searchTerm} 
+      />
+    );
   };
 
   return (
@@ -135,13 +185,40 @@ const HomePage = ({
           isAuthenticated={isAuthenticated}
           setShowAuthModal={setShowAuthModal}
           onHomeClick={handleHomeClick}
+          openPlaylist={handleOpenPlaylist} // <-- add this
         />
         <div className="flex-1 flex flex-col min-w-0">
-          {renderMainContent()}
+          {/* Only this part changes based on selectedSong, etc. */}
+          {selectedSong ? (
+            <SongResult
+              song={selectedSong}
+              onBack={() => {
+                setSelectedSong(null);
+                setShowSearchResults(true); // Show search results when going back
+              }}
+              onPlay={playSong}
+            />
+          ) : showSearchResults ? (
+            renderSearchResults()
+          ) : currentPlaylist ? (
+            <ShowPlaylist
+              playlist={currentPlaylist}
+              onBack={() => setCurrentPlaylist(null)}
+              playSong={playSong}
+            />
+          ) : (
+            renderMainContent()
+          )}
         </div>
         {isAuthenticated && (
           <div className="w-70 flex-shrink-0 hidden lg:block">
-            <RightSidebar />
+            <RightSidebar
+              currentSong={currentSong}
+              queue={isPlayingFromPlaylist && currentSongIndex > -1 ? playlistSongs.slice(currentSongIndex + 1) : []}
+              showQueue={isPlayingFromPlaylist}
+              onPlayQueueSong={playSong}
+              recentlyPlayed={recentlyPlayed} // <-- add this
+            />
           </div>
         )}
       </div>

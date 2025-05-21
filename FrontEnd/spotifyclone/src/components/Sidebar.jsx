@@ -1,14 +1,41 @@
-// Update for Sidebar.js - Change from w-96 to fixed w-64
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import CreatePlaylist from "./CreatePlaylist";
+import EditPlaylist from "./EditPlaylist";
 
-const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal, onHomeClick, playSong }) => {
+const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal, onHomeClick, playSong, setCurrentPlaylist, openPlaylist }) => {
   const navigate = useNavigate();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [playlists, setPlaylists] = useState([]);
+  const [editPlaylist, setEditPlaylist] = useState(null); // Holds the playlist being edited
+
   const menuItems = [
     { icon: "/assets/frontend-assets/home.png", label: "Home", page: 'home' },
     { icon: "/assets/frontend-assets/search.png", label: "Search", page: 'search' },
     { icon: "/assets/frontend-assets/stack.png", label: "Your Library", page: 'library' },
   ];
+
+  // Fetch playlists from backend
+  const fetchPlaylists = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5050/api/playlists", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPlaylists(data.playlists || []);
+      }
+    } catch (err) {
+      // Optionally handle error
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchPlaylists();
+    }
+  }, [isAuthenticated]);
 
   return (
     <div className="w-64 flex-shrink-0 bg-black h-screen overflow-y-auto flex flex-col">
@@ -25,7 +52,6 @@ const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal
             className="flex items-center space-x-4 w-full px-4 py-2 text-gray-400 hover:text-white transition-colors rounded-md hover:bg-gray-800"
             onClick={() => {
               if (item.page === 'home') {
-                // Use onHomeClick instead of full page reload
                 onHomeClick();
               } else {
                 setCurrentPage(item.page);
@@ -43,13 +69,16 @@ const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal
         <>
           {/* Create Playlist and Liked Songs (Logged In) */}
           <div className="mt-6 px-2">
-            <div className="flex items-center space-x-4 px-4 py-2 cursor-pointer text-gray-400 hover:text-white" onClick={() => console.log('Create Playlist clicked')}>
+            <div
+              className="flex items-center space-x-4 px-4 py-2 cursor-pointer text-gray-400 hover:text-white"
+              onClick={() => setShowCreateModal(true)}
+            >
               <div className="w-6 h-6 bg-gray-400 rounded flex items-center justify-center">
                 <img src="/assets/frontend-assets/plus.png" alt="Create Playlist" className="w-4 h-4" />
               </div>
               <span className="font-medium">Create Playlist</span>
             </div>
-            <div className="flex items-center space-x-4 px-4 py-2 cursor-pointer text-gray-400 hover:text-white" onClick={() => setCurrentPage('library')}> {/* Link to Your Library page */}
+            <div className="flex items-center space-x-4 px-4 py-2 cursor-pointer text-gray-400 hover:text-white" onClick={() => setCurrentPage('library')}>
               <div className="w-6 h-6 bg-gradient-to-br from-purple-700 to-blue-500 rounded flex items-center justify-center">
                 <img src="/assets/frontend-assets/like.png" alt="Liked Songs" className="w-4 h-4" />
               </div>
@@ -57,8 +86,40 @@ const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal
             </div>
           </div>
 
-          {/* Divider */}
+          {/* Divider BEFORE playlists */}
           <div className="mx-4 my-2 border-t border-gray-800"></div>
+
+          {/* Show Playlists */}
+          <div className="px-2 mt-2">
+            {playlists.map((playlist) => (
+              <div
+                key={playlist._id || playlist.id}
+                className="flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white cursor-pointer rounded hover:bg-gray-800 group"
+                onClick={() => openPlaylist(playlist)} // <-- use this
+              >
+                <img
+                  src={playlist.img_url || "/assets/frontend-assets/default_song_thumbnail.png"}
+                  alt={playlist.name}
+                  className="w-12 h-12 rounded"
+                />
+                <span className="truncate flex-1">{playlist.name}</span>
+                {/* 3 dots menu */}
+                <button
+                  className="opacity-70 hover:opacity-100 p-1"
+                  onClick={e => {
+                    e.stopPropagation();
+                    setEditPlaylist(playlist);
+                  }}
+                >
+                  <svg width="18" height="18" fill="currentColor" className="text-gray-400 hover:text-white">
+                    <circle cx="4" cy="9" r="1.5"/>
+                    <circle cx="9" cy="9" r="1.5"/>
+                    <circle cx="14" cy="9" r="1.5"/>
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
 
           {/* Liked Songs List (dynamic, Logged In) */}
           <div className="flex-1 overflow-y-auto px-2">
@@ -118,6 +179,21 @@ const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal
           <span className="font-medium">Install App</span>
         </button>
       </div>
+
+      <CreatePlaylist
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={fetchPlaylists}
+      />
+
+      {/* Edit Playlist Modal */}
+      <EditPlaylist
+        open={!!editPlaylist}
+        playlist={editPlaylist}
+        onClose={() => setEditPlaylist(null)}
+        onUpdated={fetchPlaylists}
+        onDeleted={fetchPlaylists}
+      />
     </div>
   );
 };

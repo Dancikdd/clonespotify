@@ -2,6 +2,7 @@
 const db = require('../db');
 const fs = require('fs');
 const path = require('path');
+const { addSongToPlaylist } = require('./playlistController');
 
 // Create a new song (Admin only)
 exports.createSong = async (req, res) => {
@@ -165,3 +166,4 @@ exports.searchSongs = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
