@@ -24,4 +24,7 @@ router.get('/', adminMiddleware, userController.getAllUsers);
 // Delete user (Admin or own account)
 router.delete('/:id', userController.deleteUser);
 
+router.post('/:id/make-admin', adminMiddleware, userController.makeUserAdmin);
+router.post('/:id/remove-admin', adminMiddleware, userController.removeUserAdmin);
+
 module.exports = router;
