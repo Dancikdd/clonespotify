@@ -1,13 +1,32 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 
-const Navbar = ({ isAuthenticated, isAdmin, userName, onLogout }) => {
+const Navbar = ({ isAuthenticated, isAdmin, userName, onLogout, onSearch, onHomeClick }) => {
   const navigate = useNavigate();
+  const [search, setSearch] = useState('');
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    onSearch(search);
+  };
+
+  // Handle navigation arrows
+  const handleBackClick = () => {
+    // You could implement history tracking for a true back functionality
+    // For now, just go home
+    if (onHomeClick) {
+      onHomeClick();
+    }
+  };
+
   return (
     <nav className="bg-[#181818] px-6 py-3 flex items-center justify-between">
       {/* Left side - Navigation arrows */}
       <div className="flex items-center space-x-4">
-        <button className="w-8 h-8 rounded-full bg-black flex items-center justify-center hover:scale-105 transition-transform">
+        <button 
+          className="w-8 h-8 rounded-full bg-black flex items-center justify-center hover:scale-105 transition-transform"
+          onClick={handleBackClick}
+        >
           <img src="/assets/frontend-assets/left_arrow.png" alt="Back" className="w-4 h-4" />
         </button>
         <button className="w-8 h-8 rounded-full bg-black flex items-center justify-center hover:scale-105 transition-transform">
@@ -17,13 +36,17 @@ const Navbar = ({ isAuthenticated, isAdmin, userName, onLogout }) => {
 
       {/* Center - Search bar */}
       <div className="flex-1 max-w-2xl mx-4">
-        <div className="relative">
-          <img src="/assets/frontend-assets/search.png" alt="Search" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="What do you want to listen to?"
-            className="w-full bg-[#242424] text-white pl-10 pr-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-white"
-          />
+        <div className="relative w-full">
+          <form onSubmit={handleSearch}>
+            <img src="/assets/frontend-assets/search.png" alt="Search" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="What do you want to listen to?"
+              className="w-full bg-[#242424] text-white pl-10 pr-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-white"
+            />
+          </form>
         </div>
       </div>
 

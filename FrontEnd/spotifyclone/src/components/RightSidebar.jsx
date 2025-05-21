@@ -1,3 +1,4 @@
+// Update for RightSidebar.js - Change width and add flex-shrink-0
 import React from "react";
 
 const RightSidebar = () => {
@@ -10,7 +11,7 @@ const RightSidebar = () => {
   ];
 
   return (
-    <div className="w-80 bg-[#181818] h-screen flex flex-col border-l border-gray-800">
+    <div className="w-64 flex-shrink-0 bg-[#181818] h-screen overflow-y-auto flex flex-col border-l border-gray-800">
       {/* Header */}
       <div className="p-4 border-b border-gray-800">
         <div className="flex items-center justify-between mb-4">
@@ -93,4 +94,4 @@ const RightSidebar = () => {
   );
 };
 
-export default RightSidebar; 
+export default RightSidebar;

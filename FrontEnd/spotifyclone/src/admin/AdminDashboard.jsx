@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AdminUserDash from './AdminUserDash';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('songs'); // 'songs' or 'albums'
@@ -6,7 +7,6 @@ const AdminDashboard = () => {
   const [showAddAlbumModal, setShowAddAlbumModal] = useState(false);
   const [songs, setSongs] = useState([]);
   const [albums, setAlbums] = useState([]);
-  const [users, setUsers] = useState([]);
   const [totalAlbumsCount, setTotalAlbumsCount] = useState(0);
   const [totalArtistsCount, setTotalArtistsCount] = useState(0);
   const [newSongData, setNewSongData] = useState({
@@ -24,51 +24,30 @@ const AdminDashboard = () => {
     releaseYear: '',
     songs: '', // This could be an array of song IDs or objects later
   });
+  const [users, setUsers] = useState([]);
+
+  // Fetch songs from backend
+  const fetchSongs = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5050/api/songs', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const result = await response.json();
+      setSongs(result.data); // Assuming backend returns { success: true, data: [...] }
+    } catch (error) {
+      console.error('Error fetching songs:', error);
+    }
+  };
 
   // Fetch data on component mount
   useEffect(() => {
-    const fetchSongs = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5050/api/songs', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const result = await response.json();
-        setSongs(result.data); // Assuming the backend returns { success: true, data: [...] }
-      } catch (error) {
-        console.error('Error fetching songs:', error);
-      }
-    };
-
-    const fetchUsers = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5050/api/users', {
-           headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (!response.ok) {
-           // If 403 Forbidden, it means not admin. Handle appropriately.
-          if (response.status === 403) {
-             console.warn('Attempted to fetch users without admin privileges.');
-             // Optionally redirect or show a message
-             return;
-          }
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const result = await response.json();
-        setUsers(result.data); // Assuming backend returns { success: true, count: X, data: [...] }
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
-
+    fetchSongs();
     // Placeholder fetch for albums - replace with actual API call later
     const fetchAlbums = async () => {
       // In a real application, you would fetch data from your backend APIs here
@@ -83,11 +62,10 @@ const AdminDashboard = () => {
       setAlbums(placeholderAlbums);
     };
 
-    fetchSongs();
-    fetchUsers(); // Fetch users on mount
     fetchAlbums();
 
   }, []); // Empty dependency array ensures this runs only once on mount
+
 
    // Calculate unique albums and artists whenever songs change
    useEffect(() => {
@@ -98,12 +76,32 @@ const AdminDashboard = () => {
     setTotalArtistsCount(uniqueArtists.size);
   }, [songs]); // Recalculate when songs state changes
 
+  // Fetch users on mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5050/api/users', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) throw new Error('Failed to fetch users');
+        const result = await response.json();
+        setUsers(result.data); // Adjust if your API returns differently
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    fetchUsers();
+  }, []);
+
   // Stats data - now using state variables
   const stats = [
     { label: "Total Songs", value: songs.length, color: "text-green-500" },
     { label: "Total Albums", value: totalAlbumsCount, color: "text-purple-500" },
     { label: "Total Artists", value: totalArtistsCount, color: "text-orange-500" },
-    { label: "Total Users", value: users.length, color: "text-blue-500" }, // Use actual users count
+    { label: "Total Users", value: users.length, color: "text-blue-500" }, // Remove or handle via prop if needed
   ];
 
   // Handle input change for Add Song modal
@@ -124,7 +122,7 @@ const AdminDashboard = () => {
     formData.append('album', newSongData.album);
     formData.append('duration', newSongData.duration); // Make sure duration is a number
     if (newSongData.audioFile) {
-      formData.append('audioFile', newSongData.audioFile);
+      formData.append('audio', newSongData.audioFile);
     }
     // Add thumbnail/artwork file if needed
 
@@ -190,30 +188,30 @@ const AdminDashboard = () => {
 
   // Handle delete song
   const handleDeleteSong = async (songId) => {
-    console.log('Deleting song with ID:', songId);
-     try {
+    // Show confirmation popup
+    const confirmed = window.confirm('Are you sure you want to delete this song?');
+    if (!confirmed) return;
+
+    try {
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5050/api/songs/${songId}`, {
         method: 'DELETE',
-         headers: {
+        headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
-         const errorData = await response.json();
+        const errorData = await response.json();
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      console.log('Song deleted successfully');
-      // Update the local state to remove the deleted song
-      setSongs(prevSongs => prevSongs.filter(song => song.id !== songId));
-      // Recalculate stats after deletion
-      // No need to explicitly call recalculation here because the useEffect with [songs] dependency will handle it.
-
+      // Refresh the songs list after deleting
+      fetchSongs();
     } catch (error) {
       console.error('Error deleting song:', error);
-      // Handle error (e.g., display error message to user)
+      // Optionally show an alert to the user
+      alert('Error deleting song: ' + error.message);
     }
   };
 
@@ -244,6 +242,7 @@ const AdminDashboard = () => {
     }
   };
 
+
   return (
     <div className="min-h-screen bg-[#181818] text-white p-10">
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
@@ -269,10 +268,10 @@ const AdminDashboard = () => {
             Songs Library
           </button>
           <button
-            className={`ml-4 px-4 py-2 text-sm font-medium ${activeTab === 'albums' ? 'border-b-2 border-purple-500 text-purple-500' : 'text-gray-400 hover:text-white'}`}
-            onClick={() => setActiveTab('albums')}
+            className={`ml-4 px-4 py-2 text-sm font-medium ${activeTab === 'users' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-400 hover:text-white'}`}
+            onClick={() => setActiveTab('users')}
           >
-            Albums Library
+            All Users
           </button>
         </div>
 
@@ -531,10 +530,11 @@ const AdminDashboard = () => {
               )}
             </div>
           )}
+          {activeTab === 'users' && <AdminUserDash />}
         </div>
       </div>
     </div>
   );
 };
 
-export default AdminDashboard; 
+export default AdminDashboard;

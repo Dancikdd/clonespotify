@@ -1,6 +1,9 @@
+// Update for Sidebar.js - Change from w-96 to fixed w-64
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
-const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal }) => {
+const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal, onHomeClick, playSong }) => {
+  const navigate = useNavigate();
   const menuItems = [
     { icon: "/assets/frontend-assets/home.png", label: "Home", page: 'home' },
     { icon: "/assets/frontend-assets/search.png", label: "Search", page: 'search' },
@@ -8,7 +11,7 @@ const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal
   ];
 
   return (
-    <div className="w-64 bg-black h-screen flex flex-col">
+    <div className="w-64 flex-shrink-0 bg-black h-screen overflow-y-auto flex flex-col">
       {/* Logo */}
       <div className="p-6">
         <img src="/assets/frontend-assets/spotify_logo.png" alt="Spotify" className="h-10" />
@@ -16,18 +19,23 @@ const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal
 
       {/* Main Menu */}
       <div className="px-2">
-        {isAuthenticated && (
-          menuItems.map((item, index) => (
-            <button
-              key={index}
-              className="flex items-center space-x-4 w-full px-4 py-2 text-gray-400 hover:text-white transition-colors rounded-md hover:bg-gray-800"
-              onClick={() => setCurrentPage(item.page)}
-            >
-              <img src={item.icon} alt={item.label} className="w-6 h-6" />
-              <span className="font-medium">{item.label}</span>
-            </button>
-          ))
-        )}
+        {menuItems.map((item, index) => (
+          <button
+            key={index}
+            className="flex items-center space-x-4 w-full px-4 py-2 text-gray-400 hover:text-white transition-colors rounded-md hover:bg-gray-800"
+            onClick={() => {
+              if (item.page === 'home') {
+                // Use onHomeClick instead of full page reload
+                onHomeClick();
+              } else {
+                setCurrentPage(item.page);
+              }
+            }}
+          >
+            <img src={item.icon} alt={item.label} className="w-6 h-6" />
+            <span className="font-medium">{item.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Conditional content based on authentication state */}
@@ -58,7 +66,7 @@ const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal
               <div
                 key={song.id}
                 className="px-4 py-2 text-gray-400 hover:text-white cursor-pointer truncate"
-                onClick={() => console.log(`Clicked song: ${song.title}`)}
+                onClick={() => playSong(song)}
               >
                 {song.title} - {song.artist}
               </div>
@@ -114,4 +122,4 @@ const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

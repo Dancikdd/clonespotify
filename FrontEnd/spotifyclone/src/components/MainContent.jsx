@@ -396,7 +396,7 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated }) => 
   };
 
   return (
-    <main className="flex-1 bg-gradient-to-b from-[#181818] via-[#232323] to-[#181818] p-10 overflow-y-auto min-h-screen text-white">
+    <main className="flex-1 bg-gradient-to-b from-[#181818] via-[#232323] to-[#181818] px-4 md:px-10 overflow-y-auto min-h-screen text-white">
       {renderContent()}
     </main>
   );

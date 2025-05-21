@@ -1,23 +1,48 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import MainContent from "./MainContent";
 import Footer from "./Footer";
 import RightSidebar from "./RightSidebar";
 import PlayerBar from "./PlayerBar";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import SearchResults from "./SearchResults";
+import SongResult from "./SongResult";
+import SongNotFound from "./SongNotFound";
 
 const HomePage = ({ 
   isAuthenticated, 
   isAdmin, 
   userName, 
-  onLogout 
+  onLogout,
+  onSearch,      
+  results        
 }) => {
   const [likedSongs, setLikedSongs] = useState([]);
   const playerBarRef = useRef(null);
   const [currentPage, setCurrentPage] = useState('home');
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [currentSong, setCurrentSong] = useState(null); // The song that's playing
+  const [selectedSong, setSelectedSong] = useState(null); // The song whose details are shown
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const safeResults = Array.isArray(results) ? results : [];
+
+  useEffect(() => {
+    if (location.pathname === "/") {
+      setCurrentPage("home");
+    }
+  }, [location.pathname]);
+
+  // Set showSearchResults when results come in
+  useEffect(() => {
+    if (safeResults.length > 0) {
+      setShowSearchResults(true);
+    }
+  }, [safeResults]);
 
   const toggleLikeStatus = (song) => {
     setLikedSongs(prevLikedSongs => {
@@ -30,11 +55,65 @@ const HomePage = ({
     });
   };
 
+  // When searching, show search results but don't hide the currently playing song
+  const handleSearch = (query) => {
+    setSearchTerm(query);
+    setShowSearchResults(true);
+    setSelectedSong(null); // Clear selected song details
+    if (onSearch) {
+      onSearch(query);
+    }
+  };
+  
+  // Handle navigation to home without affecting music playback
+  const handleHomeClick = () => {
+    setShowSearchResults(false);
+    setSelectedSong(null);
+    setCurrentPage('home');
+  };
+
+  // When you click a song in search results, show its details
+  const handleSongClick = (song) => {
+    setSelectedSong(song);
+    setShowSearchResults(false);
+  };
+
+  // When you press play in SongResult, play the song
   const playSong = (songToPlay) => {
+    setCurrentSong(songToPlay);
     if (!isAuthenticated) {
       setShowAuthModal(true);
     } else if (playerBarRef.current && playerBarRef.current.setPlayingSong) {
       playerBarRef.current.setPlayingSong(songToPlay);
+    }
+  };
+
+  const renderMainContent = () => {
+    if (selectedSong) {
+      return (
+        <SongResult
+          song={selectedSong}
+          onBack={() => setSelectedSong(null)}
+          onPlay={playSong}
+        />
+      );
+    } else if (showSearchResults) {
+      return (
+        <SearchResults 
+          results={safeResults} 
+          onSongClick={handleSongClick}
+          searchTerm={searchTerm} 
+        />
+      );
+    } else {
+      return (
+        <MainContent
+          currentPage={currentPage}
+          likedSongs={likedSongs}
+          playSong={playSong}
+          isAuthenticated={isAuthenticated}
+        />
+      );
     }
   };
 
@@ -45,21 +124,39 @@ const HomePage = ({
         isAdmin={isAdmin}
         userName={userName}
         onLogout={onLogout} 
+        onSearch={handleSearch}
+        onHomeClick={handleHomeClick}   
       />
-      <div className="flex flex-1">
-        <Sidebar likedSongs={likedSongs} playSong={playSong} setCurrentPage={setCurrentPage} isAuthenticated={isAuthenticated} setShowAuthModal={setShowAuthModal} />
-        <MainContent currentPage={currentPage} likedSongs={likedSongs} playSong={playSong} isAuthenticated={isAuthenticated} />
-        {isAuthenticated && <RightSidebar />}
+      <div className="flex flex-1 overflow-x-hidden">
+        <Sidebar
+          likedSongs={likedSongs}
+          playSong={playSong}
+          setCurrentPage={setCurrentPage}
+          isAuthenticated={isAuthenticated}
+          setShowAuthModal={setShowAuthModal}
+          onHomeClick={handleHomeClick}
+        />
+        <div className="flex-1 flex flex-col min-w-0">
+          {renderMainContent()}
+        </div>
+        {isAuthenticated && (
+          <div className="w-70 flex-shrink-0 hidden lg:block">
+            <RightSidebar />
+          </div>
+        )}
       </div>
       <Footer />
-      {isAuthenticated && <PlayerBar ref={playerBarRef} likedSongs={likedSongs} toggleLikeStatus={toggleLikeStatus} />}
-      
-      {/* Authentication Modal */}
+      {isAuthenticated && (
+        <PlayerBar
+          ref={playerBarRef}
+          likedSongs={likedSongs}
+          toggleLikeStatus={toggleLikeStatus}
+          currentSong={currentSong}
+        />
+      )}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          {/* Blue Playlist Modal */}
           <div className="bg-blue-500 p-6 rounded-lg text-white relative max-w-sm text-center">
-            {/* Close Button - Keeping a simple close for now, position might need adjustment */}
             <button
               className="absolute top-2 right-2 text-white hover:text-gray-200 text-2xl"
               onClick={() => setShowAuthModal(false)}

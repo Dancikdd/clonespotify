@@ -1,18 +1,21 @@
 import React, { useState, useRef, useImperativeHandle } from "react";
 
-const initialSongs = [
-  { id: 1, title: "Song 1", artist: "Artist 1", src: "/assets/frontend-assets/song1.mp3", image: "/assets/frontend-assets/img1.jpg" },
-  { id: 2, title: "Song 2", artist: "Artist 2", src: "/assets/frontend-assets/song2.mp3", image: "/assets/frontend-assets/img2.jpg" },
-  { id: 3, title: "Song 3", artist: "Artist 3", src: "/assets/frontend-assets/song3.mp3", image: "/assets/frontend-assets/img3.jpg" },
-];
+const getSongSrc = (song) => {
+  if (!song) return "";
+  if (song.src) {
+    return song.src.startsWith("http") ? song.src : `http://localhost:5050${song.src}`;
+  }
+  if (song.audio_url) {
+    return song.audio_url.startsWith("http") ? song.audio_url : `http://localhost:5050${song.audio_url}`;
+  }
+  return "";
+};
 
-const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
+const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus, currentSong }, ref) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [currentSongIndex, setCurrentSongIndex] = useState(0);
-  const [songs] = useState(initialSongs); // songs list is static here, managed by parent for liking
-  const [volume, setVolume] = useState(1); // Volume from 0 to 1
+  const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isShuffleActive, setIsShuffleActive] = useState(false);
   const [isRepeatActive, setIsRepeatActive] = useState(false);
@@ -25,43 +28,32 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
   // Expose functions to parent component via ref
   useImperativeHandle(ref, () => ({
     setPlayingSong: (songToPlay) => {
-      const index = songs.findIndex(song => song.id === songToPlay.id);
-      if (index !== -1) {
-        setCurrentSongIndex(index);
-        // The useEffect for currentSongIndex change will handle the play
-        if (!isPlaying) {
-           setIsPlaying(true); // Start playing if not already playing
-        }
-      }
+      // No-op, handled by currentSong prop now
     },
   }));
 
   // Add keyboard control for spacebar
   React.useEffect(() => {
     const handleKeyDown = (event) => {
-      // Check if the spacebar is pressed and the event target is not an input or textarea
       if (
         (event.code === 'Space' || event.key === ' ') &&
         event.target.tagName !== 'INPUT' &&
         event.target.tagName !== 'TEXTAREA'
       ) {
-        event.preventDefault(); // Prevent default spacebar behavior (e.g., scrolling)
+        event.preventDefault();
         togglePlay();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-
-    // Cleanup the event listener when the component unmounts
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isPlaying]); // Re-run effect if isPlaying changes to ensure togglePlay is up-to-date
+  }, [isPlaying]);
 
-   // Log likedSongs prop when it changes
-   React.useEffect(() => {
-     console.log("Liked Songs updated in PlayerBar:", likedSongs);
-   }, [likedSongs]);
+  React.useEffect(() => {
+    console.log("Liked Songs updated in PlayerBar:", likedSongs);
+  }, [likedSongs]);
 
   const togglePlay = () => {
     if (audioRef.current) {
@@ -74,47 +66,15 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
     }
   };
 
-  const playNextSong = () => {
-    setCurrentSongIndex((prevIndex) => {
-      const nextIndex = (prevIndex + 1) % songs.length;
-      // If audio was playing, auto-play the next song
-      if (isPlaying && audioRef.current) {
-         // The useEffect for currentSongIndex change will handle the play
-      }
-      return nextIndex;
-    });
-  };
-
-  const playPreviousSong = () => {
-    setCurrentSongIndex((prevIndex) => {
-      const prevIndexAdjusted = prevIndex - 1;
-      const previousIndex = (prevIndexAdjusted < 0) ? songs.length - 1 : prevIndexAdjusted;
-       // If audio was playing, auto-play the previous song
-      if (isPlaying && audioRef.current) {
-        // The useEffect for currentSongIndex change will handle the play
-      }
-      return previousIndex;
-    });
-  };
-
-  // Effect to update audio source and play when currentSongIndex changes
+  // Play the currentSong when it changes
   React.useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.src = songs[currentSongIndex].src;
-      audioRef.current.load(); // Load the new audio source
-      if (isPlaying) {
-        audioRef.current.play().catch(error => console.log("Autoplay prevented:", error)); // Auto-play if it was playing before
-      }
+    if (currentSong && audioRef.current) {
+      audioRef.current.src = getSongSrc(currentSong);
+      audioRef.current.load();
+      audioRef.current.play().catch(e => {});
+      setIsPlaying(true);
     }
-  }, [currentSongIndex, songs]); // Added songs to dependency array
-
-   // Effect to update volume when volume or isMuted state changes
-  React.useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume;
-    }
-  }, [volume, isMuted]);
-
+  }, [currentSong]);
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
@@ -132,20 +92,19 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
   };
 
   const handleToggleFavorite = () => {
-     toggleLikeStatus(songs[currentSongIndex]); // Call the toggleLikeStatus function passed from parent
+    if (currentSong) toggleLikeStatus(currentSong);
   };
 
-   const handleVolumeChange = (e) => {
+  const handleVolumeChange = (e) => {
     if (volumeBarRef.current) {
       const newVolume = e.nativeEvent.offsetX / volumeBarRef.current.offsetWidth;
       setVolume(newVolume);
-      setIsMuted(newVolume === 0); // Mute if volume is set to 0
+      setIsMuted(newVolume === 0);
     }
   };
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
-     // Note: The useEffect for volume/isMuted handles updating audioRef.current.volume
   };
 
   const handleShuffleClick = () => {
@@ -154,20 +113,25 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
   };
 
   const handleRepeatClick = () => {
-     setIsRepeatActive(!isRepeatActive);
+    setIsRepeatActive(!isRepeatActive);
     console.log("Repeat button clicked! Active:", !isRepeatActive);
   };
 
   const handleMicClick = () => {
-     setIsMicActive(!isMicActive);
+    setIsMicActive(!isMicActive);
     console.log("Microphone button clicked! Active:", !isMicActive);
   };
 
   const handleQueueClick = () => {
-     setIsQueueActive(!isQueueActive);
+    setIsQueueActive(!isQueueActive);
     console.log("Queue button clicked! Active:", !isQueueActive);
   };
 
+  React.useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume;
+    }
+  }, [volume, isMuted]);
 
   const formatTime = (time) => {
     const minutes = Math.floor(time / 60);
@@ -175,7 +139,10 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const currentSong = songs[currentSongIndex];
+  if (!currentSong) {
+    return null; // Don't render the player if there's no song
+  }
+
   const isCurrentSongFavorited = likedSongs.some(song => song.id === currentSong.id);
 
   return (
@@ -184,13 +151,12 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
         ref={audioRef}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleTimeUpdate}
-        onEnded={playNextSong} // Automatically play the next song when the current one ends
       />
 
       <div className="flex items-center justify-between max-w-screen-xl mx-auto">
         {/* Left side - Now playing */}
         <div className="flex items-center space-x-4 w-1/3">
-          <img src={currentSong.image} alt="Album cover" className="w-14 h-14 rounded" />
+          <img src={currentSong.image || "/assets/frontend-assets/default_song_thumbnail.png"} alt="Album cover" className="w-14 h-14 rounded" />
           <div>
             <div className="text-white font-medium">{currentSong.title}</div>
             <div className="text-gray-400 text-sm">{currentSong.artist}</div>
@@ -200,7 +166,7 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
               src="/assets/frontend-assets/like.png"
               alt="Like"
               className="w-5 h-5"
-              style={{ filter: isCurrentSongFavorited ? 'invert(53%) sepia(71%) saturate(4976%) hue-rotate(133deg) brightness(101%) contrast(104%)' : 'none' }} // CSS filter to turn white to green
+              style={{ filter: isCurrentSongFavorited ? 'invert(53%) sepia(71%) saturate(4976%) hue-rotate(133deg) brightness(101%) contrast(104%)' : 'none' }}
             />
           </button>
         </div>
@@ -211,8 +177,9 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
             <button className={`text-gray-400 hover:text-white ${isShuffleActive ? 'text-green-500' : ''}`} onClick={handleShuffleClick}>
               <img src="/assets/frontend-assets/shuffle.png" alt="Shuffle" className="w-5 h-5" />
             </button>
-            <button className="text-gray-400 hover:text-white" onClick={playPreviousSong}>
-              <img src="/assets/frontend-assets/prev.png" alt="Previous" className="w-5 h-5" />
+            {/* Previous/Next disabled since no playlist */}
+            <button className="text-gray-400 hover:text-white" disabled>
+              <img src="/assets/frontend-assets/prev.png" alt="Previous" className="w-5 h-5 opacity-50" />
             </button>
             <button
               onClick={togglePlay}
@@ -224,8 +191,8 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
                 className="w-6 h-6"
               />
             </button>
-            <button className="text-gray-400 hover:text-white" onClick={playNextSong}>
-              <img src="/assets/frontend-assets/next.png" alt="Next" className="w-5 h-5" />
+            <button className="text-gray-400 hover:text-white" disabled>
+              <img src="/assets/frontend-assets/next.png" alt="Next" className="w-5 h-5 opacity-50" />
             </button>
             <button className={`text-gray-400 hover:text-white ${isRepeatActive ? 'text-green-500' : ''}`} onClick={handleRepeatClick}>
               <img src="/assets/frontend-assets/loop.png" alt="Repeat" className="w-5 h-5" />
@@ -255,7 +222,7 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
               src="/assets/frontend-assets/mic.png"
               alt="Microphone"
               className="w-5 h-5"
-              style={{ filter: isMicActive ? 'invert(53%) sepia(71%) saturate(4976%) hue-rotate(133deg) brightness(101%) contrast(104%)' : 'none' }} // CSS filter to turn white to green
+              style={{ filter: isMicActive ? 'invert(53%) sepia(71%) saturate(4976%) hue-rotate(133deg) brightness(101%) contrast(104%)' : 'none' }}
             />
           </button>
           <button className={`text-gray-400 hover:text-white ${isQueueActive ? 'text-green-500' : ''}`} onClick={handleQueueClick}>
@@ -263,7 +230,7 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
               src="/assets/frontend-assets/queue.png"
               alt="Queue"
               className="w-5 h-5"
-              style={{ filter: isQueueActive ? 'invert(53%) sepia(71%) saturate(4976%) hue-rotate(133deg) brightness(101%) contrast(104%)' : 'none' }} // CSS filter to turn white to green
+              style={{ filter: isQueueActive ? 'invert(53%) sepia(71%) saturate(4976%) hue-rotate(133deg) brightness(101%) contrast(104%)' : 'none' }}
             />
           </button>
           <button className="text-gray-400 hover:text-white" onClick={toggleMute}>
@@ -278,4 +245,4 @@ const PlayerBar = React.forwardRef(({ likedSongs, toggleLikeStatus }, ref) => {
   );
 });
 
-export default PlayerBar; 
+export default PlayerBar;
