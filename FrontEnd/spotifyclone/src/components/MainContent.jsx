@@ -1,12 +1,49 @@
 import React, { useState, useEffect } from "react";
+import SongResult from "./SongResult";
+import LikedSongs from "./LikedSongs"; // Make sure the filename matches exactly (case-sensitive)
 
 const tabs = ["All", "Music", "Podcasts", "Albums"];
 
-const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated, openPlaylist }) => {
+const MainContent = ({ 
+  currentPage, 
+  playSong, 
+  isAuthenticated, 
+  openPlaylist,
+  playPlaylistSong, // Function to play song with playlist context
+  allSongs, // All available songs for random selection
+  setAllSongs, // Function to update all songs
+  likedSongs,         // <-- add this
+  setLikedSongs       // <-- add this
+}) => {
   const [activeTab, setActiveTab] = useState(0);
   const [playlists, setPlaylists] = useState([]);
   const [madeForYou, setMadeForYou] = useState([]);
   const [madeForYouArtist, setMadeForYouArtist] = useState("");
+  const [recommendedStations, setRecommendedStations] = useState([]);
+  const [recentlyPlayed, setRecentlyPlayed] = useState([]);
+  const [selectedSong, setSelectedSong] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Fetch all songs for random selection
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchAllSongs = async () => {
+        const token = localStorage.getItem("token");
+        try {
+          const res = await fetch("http://localhost:5050/api/songs", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (setAllSongs) {
+            setAllSongs(data.songs || []);
+          }
+        } catch (error) {
+          console.error("Error fetching all songs:", error);
+        }
+      };
+      fetchAllSongs();
+    }
+  }, [isAuthenticated, setAllSongs]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -37,265 +74,446 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated, openP
     }
   }, [isAuthenticated]);
 
-  const renderContent = () => {
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchRecommendedStations = async () => {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:5050/api/playlists/recommended?count=6", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setRecommendedStations(data.songs || []);
+      };
+      fetchRecommendedStations();
+    }
+  }, [isAuthenticated]);
+
+  // Fetch liked songs from the backend
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchLikedSongs = async () => {
+        const token = localStorage.getItem("token");
+        try {
+          const res = await fetch("http://localhost:5050/api/songs/user/liked", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          setLikedSongs(data.songs || []);
+        } catch (error) {
+          console.error("Error fetching liked songs:", error);
+        }
+      };
+      fetchLikedSongs();
+    }
+  }, [isAuthenticated]);
+
+  // Fetch recently played songs
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchRecentlyPlayed = async () => {
+        const token = localStorage.getItem("token");
+        try {
+          const res = await fetch("http://localhost:5050/api/songs/recently-played", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          setRecentlyPlayed(data.songs || []);
+        } catch (error) {
+          console.error("Error fetching recently played songs:", error);
+        }
+      };
+      fetchRecentlyPlayed();
+    }
+  }, [isAuthenticated]);
+
+  // Handle playing songs from "Made For You" as a playlist
+  const playMadeForYouSong = (song, index) => {
+    if (playPlaylistSong) {
+      playPlaylistSong(song, madeForYou, index);
+    } else {
+      playSong(song);
+    }
+  };
+
+  // Handle playing songs from "Recommended Stations" as a playlist
+  const playRecommendedSong = (song, index) => {
+    if (playPlaylistSong) {
+      playPlaylistSong(song, recommendedStations, index);
+    } else {
+      playSong(song);
+    }
+  };
+
+  // Handle playing songs from "Liked Songs" as a playlist
+  const playLikedSong = (song, index) => {
+    // Find the exact object from likedSongs by ID
+    const likedSong = likedSongs.find(
+      s => String(s.id || s._id) === String(song.id || song._id)
+    );
+    if (playPlaylistSong) {
+      playPlaylistSong(likedSong || song, likedSongs, index);
+    } else {
+      playSong(likedSong || song);
+    }
+  };
+
+  // Handle interactions when not logged in
+  const handleLoginRequired = () => {
+    setShowLoginModal(true);
+  };
+
+  // Refresh Recommended Stations
+  const refreshRecommendedStations = () => {
+    setRecommendedStations([]);
+    (async () => {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5050/api/playlists/recommended?count=6", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setRecommendedStations(data.songs || []);
+    })();
+  };
+
+  // Login Modal Component
+  const LoginModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-gradient-to-br from-purple-800 to-blue-700 p-8 rounded-2xl text-white relative max-w-md w-full mx-4 shadow-2xl">
+        <button
+          className="absolute top-4 right-4 text-white hover:text-gray-300 text-2xl font-bold"
+          onClick={() => setShowLoginModal(false)}
+        >
+          &times;
+        </button>
+        
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <img src="/assets/frontend-assets/play.png" alt="Music" className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Log in to continue</h2>
+          <p className="text-gray-200 text-sm">You need to log in to access this feature and enjoy unlimited music.</p>
+        </div>
+
+        <div className="space-y-4">
+          <button 
+            className="w-full bg-green-500 text-black font-bold py-3 px-6 rounded-full hover:bg-green-400 transition-colors"
+            onClick={() => {
+              setShowLoginModal(false);
+              window.location.href = '/login';
+            }}
+          >
+            Log in
+          </button>
+          
+          <div className="text-center">
+            <p className="text-gray-300 text-sm mb-2">Don't have an account?</p>
+            <button 
+              className="text-green-400 font-semibold hover:underline"
+              onClick={() => {
+                setShowLoginModal(false);
+                window.location.href = '/register';
+              }}
+            >
+              Sign up for free
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Not logged in content
+  const renderNotLoggedInContent = () => {
+    const featuredContent = [
+      { id: 1, image: "/assets/frontend-assets/img1.jpg", title: "Today's Top Hits", description: "The most played songs right now" },
+      { id: 2, image: "/assets/frontend-assets/img2.jpg", title: "RapCaviar", description: "New music from Drake, Travis Scott and more" },
+      { id: 3, image: "/assets/frontend-assets/img3.jpg", title: "All Out 2010s", description: "The biggest hits of the 2010s" },
+      { id: 4, image: "/assets/frontend-assets/img4.jpg", title: "Rock Classics", description: "Rock legends & epic songs" },
+      { id: 5, image: "/assets/frontend-assets/img5.jpg", title: "Chill Pop", description: "Chill pop music for any mood" },
+      { id: 6, image: "/assets/frontend-assets/img6.jpg", title: "Viva Latino", description: "Today's top Latin hits" }
+    ];
+
+    return (
+      <div className="text-center py-20">
+        {/* Welcome Section */}
+        <div className="mb-16">
+          <h1 className="text-6xl font-bold text-white mb-4">Welcome to Music App</h1>
+          <p className="text-xl text-gray-300 mb-8">Discover millions of songs and podcasts</p>
+          <div className="space-x-4">
+            <button 
+              onClick={() => window.location.href = '/register'}
+              className="bg-green-500 text-black font-bold py-3 px-8 rounded-full hover:scale-105 transition-transform"
+            >
+              Sign up free
+            </button>
+            <button 
+              onClick={() => window.location.href = '/login'}
+              className="border border-gray-400 text-white font-bold py-3 px-8 rounded-full hover:border-white transition-colors"
+            >
+              Log in
+            </button>
+          </div>
+        </div>
+
+        {/* Featured Playlists Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-white mb-8 text-left">Featured Playlists</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredContent.map((item) => (
+              <div 
+                key={item.id} 
+                className="bg-[#181818] rounded-lg p-4 hover:bg-[#282828] transition-all duration-300 cursor-pointer group"
+                onClick={handleLoginRequired}
+              >
+                <div className="relative mb-4">
+                  <img 
+                    src={item.image} 
+                    alt={item.title} 
+                    className="w-full h-48 object-cover rounded-md"
+                  />
+                  <div className="absolute bottom-2 right-2 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl">
+                    <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
+                  </div>
+                </div>
+                <h3 className="text-white font-bold text-lg mb-2 text-left">{item.title}</h3>
+                <p className="text-gray-400 text-sm text-left">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Popular Songs Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-white mb-8 text-left">Popular Right Now</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { id: 1, title: "Blinding Lights", artist: "The Weeknd", image: "/assets/frontend-assets/img7.jpg" },
+              { id: 2, title: "Shape of You", artist: "Ed Sheeran", image: "/assets/frontend-assets/img8.jpg" },
+              { id: 3, title: "Someone Like You", artist: "Adele", image: "/assets/frontend-assets/img9.jpg" },
+              { id: 4, title: "Bohemian Rhapsody", artist: "Queen", image: "/assets/frontend-assets/img10.jpg" }
+            ].map((song) => (
+              <div 
+                key={song.id}
+                className="bg-[#181818] rounded-lg p-4 hover:bg-[#282828] transition-all duration-300 cursor-pointer group"
+                onClick={handleLoginRequired}
+              >
+                <div className="relative mb-3">
+                  <img 
+                    src={song.image} 
+                    alt={song.title} 
+                    className="w-full h-32 object-cover rounded-md"
+                  />
+                  <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl">
+                    <img src="/assets/frontend-assets/play.png" alt="Play" className="w-5 h-5" />
+                  </div>
+                </div>
+                <h4 className="text-white font-semibold text-sm mb-1 truncate">{song.title}</h4>
+                <p className="text-gray-400 text-xs truncate">{song.artist}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Call to Action */}
+        <div className="bg-gradient-to-r from-purple-800 via-purple-600 to-blue-700 rounded-2xl p-8">
+          <h2 className="text-3xl font-bold text-white mb-4">Ready to start listening?</h2>
+          <p className="text-lg text-gray-200 mb-6">Join millions of users and discover your next favorite song</p>
+          <button 
+            onClick={() => window.location.href = '/register'}
+            className="bg-white text-black font-bold py-3 px-8 rounded-full hover:scale-105 transition-transform"
+          >
+            Get started
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Logged in content (your existing content)
+  const renderLoggedInContent = () => {
     switch (currentPage) {
       case 'home':
-        if (isAuthenticated) {
-          const dailyMixes = [
-            { id: 1, image: "/assets/frontend-assets/img7.jpg", title: "Daily Mix 1", artists: "Artist 1, Artist 2" },
-            { id: 2, image: "/assets/frontend-assets/img8.jpg", title: "Daily Mix 2", artists: "Artist 3, Artist 4" },
-            { id: 3, image: "/assets/frontend-assets/img9.jpg", title: "Daily Mix 3", artists: "Artist 5, Artist 6" },
-            { id: 4, image: "/assets/frontend-assets/img10.jpg", title: "Daily Mix 4", artists: "Artist 7, Artist 8" },
-            { id: 5, image: "/assets/frontend-assets/img11.jpg", title: "Daily Mix 5", artists: "Artist 9, Artist 10" },
-            { id: 6, image: "/assets/frontend-assets/img12.jpg", title: "Daily Mix 6", artists: "Artist 11, Artist 12" },
-          ];
-
-          const recommendedStations = [
-            { name: "ECHO", image: "/assets/frontend-assets/img13.jpg" },
-            { name: "Три дня дождя", image: "/assets/frontend-assets/img14.jpg" },
-            { name: "Nikitata", image: "/assets/frontend-assets/img15.jpg" },
-            { name: "Mary Gu", image: "/assets/frontend-assets/img16.jpg" },
-            { name: "Lost", image: "/assets/frontend-assets/img1.jpg" },
-            { name: "Лютики", image: "/assets/frontend-assets/img2.jpg" },
-          ];
-
-          const recentlyPlayed = [
-            { id: 1, image: "/assets/frontend-assets/img3.jpg", title: "Playlist 1", artist: "Artist 1" },
-            { id: 2, image: "/assets/frontend-assets/img4.jpg", title: "Playlist 2", artist: "Artist 2" },
-            { id: 3, image: "/assets/frontend-assets/img5.jpg", title: "Playlist 3", artist: "Artist 3" },
-            { id: 4, image: "/assets/frontend-assets/img6.jpg", title: "Playlist 4", artist: "Artist 4" },
-            { id: 5, image: "/assets/frontend-assets/img7.jpg", title: "Playlist 5", artist: "Artist 5" },
-            { id: 6, image: "/assets/frontend-assets/img8.jpg", title: "Playlist 6", artist: "Artist 6" },
-          ];
-
-          return (
-            <>
-              {/* Tab Bar */}
-              <div className="rounded-2xl bg-gradient-to-r from-purple-800 via-purple-600 to-blue-700 p-6 mb-8 flex flex-col gap-4 shadow-lg">
-                <div className="flex gap-4 mb-4">
-                  {tabs.map((tab, idx) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(idx)}
-                      className={`px-5 py-2 rounded-full font-bold text-sm transition-colors ${activeTab === idx ? 'bg-white text-black shadow' : 'bg-white bg-opacity-10 text-white hover:bg-opacity-20'}`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-                {/* Revert to previous card style for initial demoCards */}
-                <div className="flex gap-4 overflow-x-auto pb-2">
-                  {playlists.length === 0 ? (
-                    <div className="text-gray-400">No playlists found.</div>
-                  ) : (
-                    playlists.map((playlist) => (
-                      <div
-                        key={playlist.id || playlist._id}
-                        className="min-w-[180px] h-24 rounded-xl overflow-hidden relative group cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => openPlaylist(playlist)} // <-- add this
-                      >
-                        <img src={playlist.img_url || "/assets/frontend-assets/default_song_thumbnail.png"} alt={playlist.name} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-br from-black/50 to-transparent flex items-center justify-center">
-                          <span className="text-white font-bold text-lg">{playlist.name}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+        return (
+          <>
+            {/* Tab Bar */}
+            <div className="rounded-2xl bg-gradient-to-r from-purple-800 via-purple-600 to-blue-700 p-6 mb-8 flex flex-col gap-4 shadow-lg">
+              <div className="flex gap-4 mb-4">
+                {tabs.map((tab, idx) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(idx)}
+                    className={`px-5 py-2 rounded-full font-bold text-sm transition-colors ${activeTab === idx ? 'bg-white text-black shadow' : 'bg-white bg-opacity-10 text-white hover:bg-opacity-20'}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
               </div>
+              {/* Playlists */}
+              <div className="flex gap-4 overflow-x-auto pb-2">
+                {playlists.length === 0 ? (
+                  <div className="text-gray-400">No playlists found.</div>
+                ) : (
+                  playlists.map((playlist) => (
+                    <div
+                      key={playlist.id || playlist._id}
+                      className="min-w-[180px] h-24 rounded-xl overflow-hidden relative group cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => openPlaylist(playlist)}
+                    >
+                      <img src={playlist.img_url || "/assets/frontend-assets/default_song_thumbnail.png"} alt={playlist.name} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-black/50 to-transparent flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">{playlist.name}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
 
-              {/* Made For You / Random Playlist by Artist */}
+            {/* Made For You / Random Playlist by Artist */}
+            <section className="mb-10">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-extrabold text-white tracking-tight">
+                  Made For You {madeForYouArtist && <span className="text-green-400">({madeForYouArtist})</span>}
+                </h2>
+                <button
+                  className="text-sm text-gray-400 hover:underline"
+                  onClick={() => {
+                    setMadeForYou([]);
+                    setMadeForYouArtist("");
+                    (async () => {
+                      const token = localStorage.getItem("token");
+                      const res = await fetch("http://localhost:5050/api/playlists/made-for-you", {
+                        headers: { Authorization: `Bearer ${token}` }
+                      });
+                      const data = await res.json();
+                      setMadeForYou(data.songs || []);
+                      setMadeForYouArtist(data.artist || "");
+                    })();
+                  }}
+                >
+                  Refresh
+                </button>
+              </div>
+              <div className="flex gap-6 overflow-x-auto pb-2">
+                {madeForYou.length === 0 ? (
+                  <div className="text-gray-400">No songs found.</div>
+                ) : (
+                  madeForYou.map((song, index) => (
+                    <div
+                      key={song.id}
+                      className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] transition-all duration-300 group flex flex-col items-center"
+                    >
+                      <div
+                        className="relative w-48 h-48 mb-3 rounded-md overflow-hidden cursor-pointer"
+                        onClick={() => setSelectedSong(song)}
+                        title="Show song details"
+                      >
+                        <img
+                          src="https://community.spotify.com/t5/image/serverpage/image-id/25294i2836BD1C1A31BDF2/image-size/original?v=mpbl-1&px=-1"
+                          alt={song.title}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Green Play Button */}
+                        <button
+                          className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl hover:scale-125"
+                          onClick={e => {
+                            e.stopPropagation();
+                            playMadeForYouSong(song, index);
+                          }}
+                          title="Play"
+                        >
+                          <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
+                        </button>
+                      </div>
+                      <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{song.title}</div>
+                      <div className="text-gray-400 text-sm truncate w-full text-center">{song.artist}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+
+            {/* Recommended Stations */}
+            <section className="mb-10">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-extrabold text-white tracking-tight">Recommended Stations</h2>
+                <button
+                  className="text-sm text-gray-400 hover:underline"
+                  onClick={refreshRecommendedStations}
+                >
+                  Refresh
+                </button>
+              </div>
+              <div className="flex gap-6 overflow-x-auto pb-2">
+                {recommendedStations.map((song, index) => (
+                  <div
+                    key={song.id}
+                    className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] transition-all duration-300 group flex flex-col items-center"
+                  >
+                    <div
+                      className="relative w-48 h-48 mb-3 rounded-md overflow-hidden cursor-pointer"
+                      onClick={() => setSelectedSong(song)}
+                      title="Show song details"
+                    >
+                    <img
+                      src="https://community.spotify.com/t5/image/serverpage/image-id/25294i2836BD1C1A31BDF2/image-size/original?v=mpbl-1&px=-1"
+                      alt={song.title}
+                      className="w-full h-full object-cover"
+                    />
+                      {/* Green Play Button */}
+                      <button
+                        className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl hover:scale-125"
+                        onClick={e => {
+                          e.stopPropagation();
+                          playRecommendedSong(song, index);
+                        }}
+                        title="Play"
+                      >
+                        <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
+                      </button>
+                    </div>
+                    <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{song.title}</div>
+                    <div className="text-gray-400 text-sm truncate w-full text-center">{song.artist}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Recently Played */}
+            {recentlyPlayed && recentlyPlayed.length > 0 && (
               <section className="mb-10">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-2xl font-extrabold text-white tracking-tight">
-                    Made For You {madeForYouArtist && <span className="text-green-400">({madeForYouArtist})</span>}
+                    Recently Played
                   </h2>
-                  <button
-                    className="text-sm text-gray-400 hover:underline"
-                    onClick={() => {
-                      setMadeForYou([]);
-                      setMadeForYouArtist("");
-                      (async () => {
-                        const token = localStorage.getItem("token");
-                        const res = await fetch("http://localhost:5050/api/playlists/made-for-you", {
-                          headers: { Authorization: `Bearer ${token}` }
-                        });
-                        const data = await res.json();
-                        setMadeForYou(data.songs || []);
-                        setMadeForYouArtist(data.artist || "");
-                      })();
-                    }}
-                  >
-                    Refresh
-                  </button>
                 </div>
                 <div className="flex gap-6 overflow-x-auto pb-2">
-                  {madeForYou.length === 0 ? (
-                    <div className="text-gray-400">No songs found.</div>
-                  ) : (
-                    madeForYou.map((song) => {
-                      console.log(song.img_url, encodeURI(song.img_url));
-                      return (
-                        <div
-                          key={song.id}
-                          className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center"
-                          onClick={() => playSong(song)}
-                        >
-                          <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
-                            <img
-                              src={encodeURI(song.img_url) || song.thumbnail || song.image || "/assets/frontend-assets/default_song_thumbnail.png"}
-                              alt={song.title}
-                              className="w-full h-full object-cover border border-red-500"
-                            />
-                            <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
-                              <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
-                            </div>
-                          </div>
-                          <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{song.title}</div>
-                          <div className="text-gray-400 text-sm truncate w-full text-center">{song.artist}</div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </section>
-
-              {/* Recommended Stations */}
-              <section className="mb-10">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-extrabold text-white tracking-tight">Recommended Stations</h2>
-                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
-                </div>
-                {/* Apply consistent card style to Recommended Stations */}
-                <div className="flex gap-6 overflow-x-auto pb-2">
-                  {recommendedStations.map((station, i) => (
-                     <div key={i} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
-                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
-                        <img src={station.image} alt={station.name} className="w-full h-full object-cover" />
-                         {/* No play button on these radio cards based on image */}
-                      </div>
-                      <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{station.name}</div>
-                      <div className="text-gray-400 text-sm truncate w-full text-center">Radio</div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Recently Played */}
-              <section className="mb-10">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-extrabold text-white tracking-tight">Recently played</h2>
-                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
-                </div>
-                {/* Apply consistent card style to Recently Played */}
-                <div className="flex gap-6 overflow-x-auto pb-2">
-                  {recentlyPlayed.map((item) => (
-                    <div key={item.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
-                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
+                  {recentlyPlayed.slice(0, 10).map((song, index) => (
+                    <div
+                      key={song.id}
+                      className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] transition-all duration-300 group flex flex-col items-center"
+                    >
+                      <div
+                        className="relative w-48 h-48 mb-3 rounded-md overflow-hidden cursor-pointer"
+                        onClick={() => setSelectedSong(song)}
+                        title="Show song details"
+                      >
                         <img
-                          src={encodeURI(item.img_url) || item.thumbnail || item.image || "/assets/frontend-assets/default_song_thumbnail.png"}
-                          alt={item.title}
+                          src={song.image || "https://community.spotify.com/t5/image/serverpage/image-id/25294i2836BD1C1A31BDF2/image-size/original?v=mpbl-1&px=-1"}
+                          alt={song.title}
                           className="w-full h-full object-cover"
                         />
-                         <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
+                        {/* Green Play Button */}
+                        <button
+                          className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl hover:scale-125"
+                          onClick={e => {
+                            e.stopPropagation();
+                            playSong(song);
+                          }}
+                          title="Play"
+                        >
                           <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
-                        </div>
-                      </div>
-                      <div className="text-white font-semibold truncate w-full text-center">{item.title}</div>
-                      <div className="text-gray-400 text-xs truncate w-full text-center">{item.artist}</div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </>
-          );
-        } else {
-          const trendingSongs = [
-             { id: 1, image: "/assets/frontend-assets/img1.jpg", title: "LUNA BALA - Slowed", artist: "Yb Wasg'ood, Ariis" },
-             { id: 2, image: "/assets/frontend-assets/img2.jpg", title: "Soarele A Apus", artist: "Satoshi" },
-             { id: 3, image: "/assets/frontend-assets/img3.jpg", title: "Кухни", artist: "Бонд с кнопкой" },
-             { id: 4, image: "/assets/frontend-assets/img4.jpg", title: "Dincolo de noi", artist: "Mihail" },
-             { id: 5, image: "/assets/frontend-assets/img5.jpg", title: "LOS VOLTAJE", artist: "Sayfaise, Yb Wasg'ood, Ariis" },
-             { id: 6, image: "/assets/frontend-assets/img6.jpg", title: "Наследство", artist: "Icegergert, SKY RAE" },
-             { id: 7, image: "/assets/frontend-assets/img7.jpg", title: "Espresso Macchiato", artist: "Tommy Cash" },
-             { id: 8, image: "/assets/frontend-assets/img8.jpg", title: "Bipolară", artist: "Denis Ramniceanu, Ministerul Manelelor" },
-          ];
-
-          const popularArtists = [
-             { id: 1, image: "/assets/frontend-assets/artist1.jpg", name: "The Weeknd" },
-             { id: 2, image: "/assets/frontend-assets/artist2.jpg", name: "Lady Gaga" },
-             { id: 3, image: "/assets/frontend-assets/artist3.jpg", name: "Carla's Dreams" },
-             { id: 4, image: "/assets/frontend-assets/artist4.jpg", name: "Billie Eilish" },
-             { id: 5, image: "/assets/frontend-assets/artist5.jpg", name: "Irina Rimes" },
-             { id: 6, image: "/assets/frontend-assets/artist6.jpg", name: "MiyaGi & Endspiel" },
-             { id: 7, image: "/assets/frontend-assets/artist7.jpg", name: "Miyagi & Andy Panda" },
-             { id: 8, image: "/assets/frontend-assets/artist8.jpg", name: "MACAN" },
-          ];
-
-          const popularAlbums = [
-             { id: 1, image: "/assets/frontend-assets/album1.jpg", title: "Graf Monte-Cristo", artist: "Artist 1" },
-             { id: 2, image: "/assets/frontend-assets/album2.jpg", title: "I AM", artist: "Artist 2" },
-             { id: 3, image: "/assets/frontend-assets/album3.jpg", title: "Butter Keaton", artist: "Artist 3" },
-             { id: 4, image: "/assets/frontend-assets/album4.jpg", title: "MUSIC", artist: "Artist 4" },
-             { id: 5, image: "/assets/frontend-assets/album5.jpg", title: "HIT ME HARD", artist: "Artist 5" },
-             { id: 6, image: "/assets/frontend-assets/album6.jpg", title: "Despre El", artist: "Artist 6" },
-             { id: 7, image: "/assets/frontend-assets/album7.jpg", title: "YAMAKASI", artist: "Artist 7" },
-             { id: 8, image: "/assets/frontend-assets/album8.jpg", title: "Cristoforo Colombo", artist: "Artist 8" },
-          ];
-
-          // Placeholder data for new sections (Logged Out Home Page)
-          const popularRadioStations = [
-            { id: 1, image: "/assets/frontend-assets/artist8.jpg", name: "MACAN" },
-            { id: 2, image: "/assets/frontend-assets/artist7.jpg", name: "Satoshi" },
-            { id: 3, image: "/assets/frontend-assets/artist6.jpg", name: "Ислам Итляшев" },
-            { id: 4, image: "/assets/frontend-assets/artist5.jpg", name: "Skryptonite" },
-            { id: 5, image: "/assets/frontend-assets/artist4.jpg", name: "ANNA ASTI" },
-            { id: 6, image: "/assets/frontend-assets/artist3.jpg", name: "Irina Rimes" },
-            { id: 7, image: "/assets/frontend-assets/artist2.jpg", name: "MOT" },
-            { id: 8, image: "/assets/frontend-assets/artist1.jpg", name: "MiyaGi" },
-          ];
-
-          const featuredCharts = [
-            { id: 1, color: "from-purple-600 to-blue-500", title: "Top Songs Global", subtitle: "Weekly Music Charts" },
-            { id: 2, color: "from-red-600 to-orange-500", title: "Top Songs USA", subtitle: "Weekly Music Charts" },
-            { id: 3, color: "from-red-600 to-red-500", title: "Top 50", subtitle: "Global" },
-            { id: 4, color: "from-red-600 to-red-500", title: "Top 50", subtitle: "USA" },
-            { id: 5, color: "from-green-600 to-green-500", title: "Viral 50", subtitle: "Global" },
-            { id: 6, color: "from-purple-600 to-blue-500", title: "Viral 50", subtitle: "USA" },
-          ];
-
-          const playlistsFromEditors = [
-            { id: 1, image: "/assets/frontend-assets/playlist1.jpg", title: "Feel Good", description: "An uplifting yet tuneful dinner playlist with a..." },
-            { id: 2, image: "/assets/frontend-assets/playlist2.jpg", title: "Dinner Jazz", description: "The gentle sound of some of the greatest..." },
-            { id: 3, image: "/assets/frontend-assets/playlist3.jpg", title: "Dinner Music", description: "Great food, good company and some soft..." },
-            { id: 4, image: "/assets/frontend-assets/playlist4.jpg", title: "Dinner Lounge", description: "Soft electronic music for your dinner..." },
-            { id: 5, image: "/assets/frontend-assets/playlist5.jpg", title: "Bossa Nova Dinner", description: "Soundtrack your cozy dinner with bossa nova..." },
-            { id: 6, image: "/assets/frontend-assets/playlist6.jpg", title: "Latin Dinner", description: "You bring the ingredients, we bring t..." },
-            { id: 7, image: "/assets/frontend-assets/playlist7.jpg", title: "Dinner with Friends", description: "The perfect soundtrack to those long nights w..." },
-            { id: 8, image: "/assets/frontend-assets/playlist8.jpg", title: "Buon Appetito!", description: "Buon Appetito!" },
-          ];
-
-          return (
-            <div className="text-white">
-              {/* Trending songs */}
-              <section className="mb-10">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-extrabold text-white tracking-tight">Trending songs</h2>
-                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
-                </div>
-                {/* Apply consistent card style to Trending songs */}
-                <div className="flex gap-6 overflow-x-auto pb-2">
-                  {trendingSongs.map((song) => (
-                    <div key={song.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
-                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
-                        <img
-                          src={encodeURI(song.img_url) || song.thumbnail || song.image || "/assets/frontend-assets/default_song_thumbnail.png"}
-                          alt={song.title}
-                          className="w-full h-full object-cover border border-red-500"
-                        />
-                        <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
-                          <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
-                        </div>
+                        </button>
                       </div>
                       <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{song.title}</div>
                       <div className="text-gray-400 text-sm truncate w-full text-center">{song.artist}</div>
@@ -303,170 +521,12 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated, openP
                   ))}
                 </div>
               </section>
-
-              {/* Popular artists */}
-              <section className="mb-10">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-extrabold text-white tracking-tight">Popular artists</h2>
-                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
-                </div>
-                {/* Apply consistent card style to Popular artists with rounded images */}
-                <div className="flex gap-6 overflow-x-auto pb-2">
-                  {popularArtists.map((artist) => (
-                    <div key={artist.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
-                      <div className="relative w-48 h-48 mb-3 rounded-full overflow-hidden">
-                        <img src={artist.image} alt={artist.name} className="w-full h-full object-cover rounded-full" />
-                        {/* No play button on artist cards based on image */}
-                      </div>
-                      <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{artist.name}</div>
-                      <div className="text-gray-400 text-sm truncate w-full text-center">Artist</div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Popular albums and singles */}
-              <section className="mb-10">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-extrabold text-white tracking-tight">Popular albums and singles</h2>
-                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
-                </div>
-                {/* Apply consistent card style to Popular albums and singles */}
-                <div className="flex gap-6 overflow-x-auto pb-2">
-                  {popularAlbums.map((album) => (
-                    <div key={album.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
-                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
-                        <img
-                          src={encodeURI(album.img_url) || album.thumbnail || album.image || "/assets/frontend-assets/default_song_thumbnail.png"}
-                          alt={album.title}
-                          className="w-full h-full object-cover border border-red-500"
-                        />
-                        <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
-                          <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
-                        </div>
-                      </div>
-                      <div className="text-white font-semibold truncate w-full text-center">{album.title}</div>
-                      <div className="text-gray-400 text-xs truncate w-full text-center">{album.artist}</div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Popular radio */}
-              <section className="mb-10">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-extrabold text-white tracking-tight">Popular radio</h2>
-                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
-                </div>
-                {/* Apply consistent card style to Popular radio */}
-                <div className="flex gap-6 overflow-x-auto pb-2">
-                  {popularRadioStations.map((station) => (
-                    <div key={station.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
-                      <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
-                        <img src={station.image} alt={station.name} className="w-full h-full object-cover" />
-                        {/* No play button on these radio cards based on image */}
-                      </div>
-                      <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{station.name}</div>
-                      <div className="text-gray-400 text-sm truncate w-full text-center">Radio</div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Featured charts */}
-              <section className="mb-10">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-extrabold text-white tracking-tight">Featured Charts</h2>
-                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
-                </div>
-                {/* Keep Featured Charts as is based on the provided image */}
-                <div className="flex gap-6 overflow-x-auto pb-2">
-                  {featuredCharts.map((chart) => (
-                    <div key={chart.id} className={`w-56 h-48 flex-shrink-0 rounded-lg overflow-hidden relative cursor-pointer hover:scale-105 transition-transform bg-gradient-to-br ${chart.color} p-4 flex flex-col justify-between`}>
-                       <div>
-                         <div className="text-white font-bold text-xl">{chart.title}</div>
-                         <div className="text-white text-sm mt-1">{chart.subtitle}</div>
-                       </div>
-                       {/* Optional: Add an icon or image here */}
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Playlists from our editors */}
-              <section className="mb-10">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-extrabold text-white tracking-tight">Playlists from our editors</h2>
-                  <button className="text-sm text-gray-400 hover:underline">Show all</button>
-                </div>
-                {/* Apply consistent card style to Playlists from our editors */}
-                <div className="flex gap-6 overflow-x-auto pb-2">
-                  {playlistsFromEditors.map((playlist) => (
-                     <div key={playlist.id} className="w-56 flex-shrink-0 rounded-lg p-4 bg-[#181818] hover:bg-[#282828] cursor-pointer transition-all duration-300 group flex flex-col items-center">
-                       <div className="relative w-48 h-48 mb-3 rounded-md overflow-hidden">
-                         <img
-                           src={encodeURI(playlist.img_url) || playlist.thumbnail || playlist.image || "/assets/frontend-assets/default_song_thumbnail.png"}
-                           alt={playlist.title}
-                           className="w-full h-full object-cover border border-red-500"
-                         />
-                         <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-xl">
-                          <img src="/assets/frontend-assets/play.png" alt="Play" className="w-6 h-6" />
-                        </div>
-                      </div>
-                      <div className="text-white font-bold text-lg mb-1 truncate w-full text-center">{playlist.title}</div>
-                      <div className="text-gray-400 text-sm truncate w-full text-center">{playlist.description}</div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-            </div>
-          );
-        }
-      case 'search':
-        return (
-          <div className="text-white text-2xl">Search Page Content</div>
+            )}
+          </>
         );
       case 'library':
         return (
-          <div className="text-white">
-            {/* Liked Songs Header */}
-            <div className="flex items-center mb-8 bg-gradient-to-r from-purple-700 to-blue-500 p-6 rounded-lg shadow-xl">
-              {/* Static Liked Songs Album Art/Icon */}
-              <div className="w-24 h-24 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-6">
-                <img src="/assets/frontend-assets/like.png" alt="Liked Songs Icon" className="w-12 h-12 filter invert" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold">Playlist</div>
-                <h1 className="text-4xl font-extrabold">Liked Songs</h1>
-                <div className="text-sm text-gray-200 mt-2">
-                  {likedSongs.length} song{likedSongs.length !== 1 ? 's' : ''}
-                </div>
-              </div>
-            </div>
-
-            {/* Liked Songs List */}
-            {likedSongs.length === 0 ? (
-              <p className="text-gray-400">You haven't liked any songs yet.</p>
-            ) : (
-              <div className="mt-8">
-                {likedSongs.map(song => (
-                  <div
-                    key={song.id}
-                    className="flex items-center space-x-4 p-2 rounded-md hover:bg-[#232323] cursor-pointer"
-                    onClick={() => playSong(song)}
-                  >
-                    {/* Song Image (using a placeholder for now) */}
-                    <img src={song.image || "/assets/frontend-assets/placeholder_album.png"} alt="Album cover" className="w-12 h-12 rounded" />
-                    <div>
-                      <div className="text-white font-medium">{song.title}</div>
-                      <div className="text-gray-400 text-sm">{song.artist}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <LikedSongs likedSongs={likedSongs} playLikedSong={playLikedSong} />
         );
       default:
         return (
@@ -475,9 +535,28 @@ const MainContent = ({ currentPage, likedSongs, playSong, isAuthenticated, openP
     }
   };
 
+  const renderContent = () => {
+    // Show different content based on authentication status
+    if (!isAuthenticated) {
+      return renderNotLoggedInContent();
+    } else {
+      return renderLoggedInContent();
+    }
+  };
+
   return (
     <main className="flex-1 bg-gradient-to-b from-[#181818] via-[#232323] to-[#181818] px-4 md:px-10 overflow-y-auto min-h-screen text-white">
       {renderContent()}
+      {selectedSong && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+          <SongResult
+            song={selectedSong}
+            onBack={() => setSelectedSong(null)}
+            onPlay={playSong}
+          />
+        </div>
+      )}
+      {showLoginModal && <LoginModal />}
     </main>
   );
 };

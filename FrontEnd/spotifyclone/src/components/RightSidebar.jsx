@@ -1,6 +1,10 @@
 import React from "react";
 
-const RightSidebar = ({ currentSong, queue = [], showQueue = false, onPlayQueueSong, recentlyPlayed = [] }) => {
+const RightSidebar = ({ currentSong, queue = [], showQueue = false, onPlayQueueSong, recentlyPlayed = [], likedSongs = [], toggleLikeStatus }) => {
+  const isCurrentSongFavorited = likedSongs.some(
+    s => String(s.id || s._id) === String(currentSong?.id || currentSong?._id)
+  );
+
   return (
     <div className="w-64 flex-shrink-0 bg-[#181818] h-screen overflow-y-auto flex flex-col border-l border-gray-800">
       {/* Header */}
@@ -21,11 +25,7 @@ const RightSidebar = ({ currentSong, queue = [], showQueue = false, onPlayQueueS
       <div className="p-4 border-b border-gray-800">
         <div className="flex items-center space-x-3">
           <img
-            src={
-              currentSong?.thumbnail ||
-              currentSong?.image ||
-              "/assets/frontend-assets/default_song_thumbnail.png"
-            }
+            src="https://community.spotify.com/t5/image/serverpage/image-id/25294i2836BD1C1A31BDF2/image-size/original?v=mpbl-1&px=-1"
             alt="Current song"
             className="w-12 h-12 rounded"
           />
@@ -37,8 +37,20 @@ const RightSidebar = ({ currentSong, queue = [], showQueue = false, onPlayQueueS
               {currentSong?.artist || ""}
             </div>
           </div>
-          <button className="text-gray-400 hover:text-white">
-            <img src="/assets/frontend-assets/like.png" alt="Like" className="w-5 h-5" />
+          <button
+            className={`text-gray-400 hover:text-white transition-transform hover:scale-125 ${isCurrentSongFavorited ? 'text-green-500' : ''}`}
+            onClick={() => toggleLikeStatus && currentSong && toggleLikeStatus(currentSong)}
+          >
+            <img
+              src="/assets/frontend-assets/like.png"
+              alt="Like"
+              className="w-5 h-5"
+              style={{
+                filter: isCurrentSongFavorited
+                  ? 'invert(53%) sepia(71%) saturate(4976%) hue-rotate(133deg) brightness(101%) contrast(104%)'
+                  : 'none'
+              }}
+            />
           </button>
         </div>
       </div>
@@ -53,7 +65,7 @@ const RightSidebar = ({ currentSong, queue = [], showQueue = false, onPlayQueueS
           <div className="space-y-4">
             {queue.map((item) => (
               <div key={item.id} className="flex items-center space-x-3 group">
-                <img src={item.thumbnail || item.image || "/assets/frontend-assets/default_song_thumbnail.png"} alt={item.title} className="w-12 h-12 rounded" />
+                <img src="https://community.spotify.com/t5/image/serverpage/image-id/25294i2836BD1C1A31BDF2/image-size/original?v=mpbl-1&px=-1" alt={item.title} className="w-12 h-12 rounded" />
                 <div className="flex-1">
                   <div className="text-white font-medium group-hover:text-green-500 transition-colors">
                     {item.title}
@@ -82,9 +94,13 @@ const RightSidebar = ({ currentSong, queue = [], showQueue = false, onPlayQueueS
           {recentlyPlayed.length === 0 ? (
             <div className="text-gray-400">No recently played songs.</div>
           ) : (
-            recentlyPlayed.map((item) => (
-              <div key={item.id} className="flex items-center space-x-3 group">
-                <img src={item.image || item.thumbnail || "/assets/frontend-assets/default_song_thumbnail.png"} alt={item.title} className="w-12 h-12 rounded" />
+            recentlyPlayed.slice(0, 10).map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center space-x-3 group cursor-pointer"
+                onClick={() => onPlayQueueSong && onPlayQueueSong(item)}
+              >
+                <img src="https://community.spotify.com/t5/image/serverpage/image-id/25294i2836BD1C1A31BDF2/image-size/original?v=mpbl-1&px=-1" alt={item.title} className="w-12 h-12 rounded" />
                 <div className="flex-1">
                   <div className="text-white font-medium group-hover:text-green-500 transition-colors">
                     {item.title}

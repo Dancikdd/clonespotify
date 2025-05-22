@@ -55,6 +55,24 @@ const AdminUserDash = () => {
     }
   };
 
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to permanently delete (ban) this user?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5050/api/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      fetchUsers();
+    } catch (error) {
+      alert('Error deleting user: ' + error.message);
+    }
+  };
+
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">All Users</h2>
@@ -88,12 +106,18 @@ const AdminUserDash = () => {
                     </button>
                   ) : (
                     <button
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded mr-2"
                       onClick={() => handleMakeAdmin(user.id)}
                     >
                       Make Admin
                     </button>
                   )}
+                  <button
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+                    onClick={() => handleDeleteUser(user.id)}
+                  >
+                    Ban
+                  </button>
                 </td>
               </tr>
             ))}

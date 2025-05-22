@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import CreatePlaylist from "./CreatePlaylist";
 import EditPlaylist from "./EditPlaylist";
 
-const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal, onHomeClick, playSong, setCurrentPlaylist, openPlaylist }) => {
+const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal, onHomeClick, playSong, setCurrentPlaylist, openPlaylist, onShowLikedSongs }) => {
   const navigate = useNavigate();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [playlists, setPlaylists] = useState([]);
@@ -36,6 +36,14 @@ const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal
       fetchPlaylists();
     }
   }, [isAuthenticated]);
+
+  // FIXED: Handle liked songs click properly
+  const handleLikedSongsClick = () => {
+    console.log("Liked Songs clicked in Sidebar");
+    if (onShowLikedSongs) {
+      onShowLikedSongs();
+    }
+  };
 
   return (
     <div className="w-64 flex-shrink-0 bg-black h-screen overflow-y-auto flex flex-col">
@@ -78,7 +86,12 @@ const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal
               </div>
               <span className="font-medium">Create Playlist</span>
             </div>
-            <div className="flex items-center space-x-4 px-4 py-2 cursor-pointer text-gray-400 hover:text-white" onClick={() => setCurrentPage('library')}>
+            
+            {/* FIXED: Liked Songs button with proper click handler */}
+            <div 
+              className="flex items-center space-x-4 px-4 py-2 cursor-pointer text-gray-400 hover:text-white" 
+              onClick={handleLikedSongsClick}
+            >
               <div className="w-6 h-6 bg-gradient-to-br from-purple-700 to-blue-500 rounded flex items-center justify-center">
                 <img src="/assets/frontend-assets/like.png" alt="Liked Songs" className="w-4 h-4" />
               </div>
@@ -121,18 +134,7 @@ const Sidebar = ({ likedSongs, setCurrentPage, isAuthenticated, setShowAuthModal
             ))}
           </div>
 
-          {/* Liked Songs List (dynamic, Logged In) */}
-          <div className="flex-1 overflow-y-auto px-2">
-            {likedSongs.map((song) => (
-              <div
-                key={song.id}
-                className="px-4 py-2 text-gray-400 hover:text-white cursor-pointer truncate"
-                onClick={() => playSong(song)}
-              >
-                {song.title} - {song.artist}
-              </div>
-            ))}
-          </div>
+          {/* Liked Songs List is hidden, but likes are still stored in the database */}
         </>
       ) : (
         <>

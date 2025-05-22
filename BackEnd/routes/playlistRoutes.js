@@ -15,6 +15,9 @@ router.get('/', playlistController.getUserPlaylists);
 // Get "Made for You" playlists
 router.get('/made-for-you', playlistController.getMadeForYou);
 
+// Get recommended stations
+router.get('/recommended', playlistController.getRecommendedStations);
+
 // Get playlist by ID with songs
 router.get('/:id', playlistController.getPlaylistById);
 

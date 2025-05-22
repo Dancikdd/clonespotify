@@ -100,31 +100,13 @@ exports.removeUserAdmin = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 // Delete user (Admin only or own account)
 exports.deleteUser = async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    // Check if user can perform this action (admin or deleting own account)
-    if (req.user.id !== parseInt(id) && !req.user.isAdmin) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-    
-    // Check if user exists
-    const user = await db.query('SELECT * FROM users WHERE id = $1', [id]);
-    if (user.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Delete user
-    await db.query('DELETE FROM users WHERE id = $1', [id]);
-    
-    res.status(200).json({
-      success: true,
-      message: 'User deleted successfully'
-    });
+    await db.query('DELETE FROM users WHERE id = $1', [req.params.id]);
+    res.json({ success: true, message: 'User deleted' });
   } catch (error) {
-    console.error('Delete user error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

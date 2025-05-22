@@ -1,4 +1,3 @@
-
 const db = require('../db');
 const fs = require('fs');
 const path = require('path');
@@ -167,3 +166,83 @@ exports.searchSongs = async (req, res) => {
   }
 };
 
+exports.likeSong = async (req, res) => {
+  const userId = req.user.id;
+  const songId = req.params.id;
+  try {
+    await db.query(
+      'INSERT INTO liked_songs (user_id, song_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [userId, songId]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+exports.unlikeSong = async (req, res) => {
+  const userId = req.user.id;
+  const songId = req.params.id;
+  try {
+    await db.query(
+      'DELETE FROM liked_songs WHERE user_id = $1 AND song_id = $2',
+      [userId, songId]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+exports.getLikedSongs = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const result = await db.query(
+      `SELECT songs.* FROM liked_songs
+       JOIN songs ON liked_songs.song_id = songs.id
+       WHERE liked_songs.user_id = $1`,
+      [userId]
+    );
+    res.json({ songs: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.addRecentlyPlayed = async (req, res) => {
+  const userId = req.user.id;
+  const { songId } = req.body;
+  console.log("addRecentlyPlayed called with:", { userId, songId });
+  try {
+    // Remove any previous entry for this user and song
+    await db.query(
+      `DELETE FROM recently_played WHERE user_id = $1 AND song_id = $2`,
+      [userId, songId]
+    );
+    // Insert the new entry
+    await db.query(
+      `INSERT INTO recently_played (user_id, song_id) VALUES ($1, $2)`,
+      [userId, songId]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getRecentlyPlayed = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const result = await db.query(
+      `SELECT s.* FROM recently_played rp
+       JOIN songs s ON rp.song_id = s.id
+       WHERE rp.user_id = $1
+       ORDER BY rp.played_at DESC
+       LIMIT 20`,
+      [userId]
+    );
+    res.json({ songs: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

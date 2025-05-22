@@ -12,6 +12,7 @@ CREATE TABLE playlists (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     user_id INTEGER NOT NULL,
+    img_url VARCHAR(255),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -32,4 +33,22 @@ CREATE TABLE playlist_songs (
     PRIMARY KEY (playlist_id, song_id),
     FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
     FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE
+);
+
+-- Table to store liked songs for each user
+CREATE TABLE liked_songs (
+    user_id INTEGER NOT NULL,
+    song_id INTEGER NOT NULL,
+    liked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, song_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE
+);
+
+-- Table to store recently played songs for each user
+CREATE TABLE recently_played (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    song_id INTEGER NOT NULL,
+    played_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

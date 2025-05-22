@@ -218,3 +218,15 @@ exports.getMadeForYou = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+exports.getRecommendedStations = async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT * FROM songs ORDER BY RANDOM() LIMIT 10`
+    );
+    res.json({ songs: result.rows });
+  } catch (error) {
+    console.error("Get Recommended Stations error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
